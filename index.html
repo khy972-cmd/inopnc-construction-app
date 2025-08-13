@@ -258,18 +258,61 @@ dialog::backdrop{background:#00000066}
 }
 
 /* 반응형(모바일 버튼 가림 방지) */
-@media (max-width: 480px){
+@media (max-width: 600px) {
+  /* 기본 레이아웃 조정 */
   .app{padding:12px 12px 70px}
   .card{padding:12px}
+  
+  /* 버튼 조정 */
   .btn{height:40px;min-width:72px;padding:0 10px}
+  
+  /* 관리자 설정 폼 조정 */
   .admin-add-row{gap:8px;margin-bottom:8px}
-  .admin-add-row.worker-grid{grid-template-columns:1fr} /* 작업자 관리: 모바일에서 1열 */
-  .admin-add-row.site-grid{grid-template-columns:1fr} /* 현장 관리: 모바일에서 1열 */
-  .wName,.wDaily,.sCompany,.sName,.sBudget{width:100%;min-width:0} /* 모바일에서 너비 자동 조정 */
-  .admin-add-row .btn-container{grid-column:1 / -1;justify-content:flex-end;margin-top:8px} /* 모바일에서 버튼이 별도 행으로 */
-}
-@media (max-width: 360px){
+  
+  /* 작업자 관리: 모바일에서 1열 */
+  .admin-add-row.worker-grid{grid-template-columns:1fr}
+  
+  /* 현장 관리: 모바일에서 1열 */
+  .admin-add-row.site-grid{grid-template-columns:1fr}
+  
+  /* 입력 필드 너비 자동 조정 */
+  .wName,.wDaily,.sCompany,.sName,.sBudget{width:100%;min-width:0}
+  
+  /* 버튼 컨테이너 조정 */
+  .admin-add-row .btn-container{grid-column:1 / -1;justify-content:flex-end;margin-top:8px}
+  
+  /* 테이블 최소 너비 조정 */
   .admin-table{min-width:0}
+  
+  /* 테이블 셀 패딩 조정 */
+  .admin-table th,.admin-table td{padding:4px}
+  
+  /* 작업자명/현장명 입력 필드 너비 조정 */
+  .admin-table .wName,.admin-table .sName{min-width:100px}
+}
+
+/* 더 작은 화면에서 추가 조정 */
+@media (max-width: 480px) {
+  /* 버튼 크기 조정 */
+  .btn{min-width:60px}
+  
+  /* 입력 필드 높이 조정 */
+  input,select,textarea{padding:8px}
+  
+  /* 테이블 헤더 폰트 크기 조정 */
+  .admin-table th{font-size:11px}
+  
+  /* 테이블 셀 패딩 축소 */
+  .admin-table th,.admin-table td{padding:3px}
+}
+
+/* 아주 작은 화면에서 최종 조정 */
+@media (max-width: 360px) {
+  /* 테이블 최소 너비 제거 */
+  .admin-table{min-width:0}
+  
+  /* 삭제 버튼 크기 조정 */
+  .admin-table .btn{padding:4px 8px}
 }
 </style>
 </head>
