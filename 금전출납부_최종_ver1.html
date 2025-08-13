@@ -604,7 +604,7 @@ dialog::backdrop{background:#00000066}
 
 <script>
 /* ===== Supabase 연동 설정 ===== */
-const SUPABASE_URL = 'https://sb_publishable_Zt1K1d0ym1o9ak96CADM2A_KdVQNG_v.supabase.co';
+const SUPABASE_URL = 'https://pkrgosfznqzklabzjllv.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrcmdvc2Z6bnF6a2xhYnpqbGx2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwNDg1MjUsImV4cCI6MjA3MDYyNDUyNX0.-PsE0Cpgoonjw5ZSwzI6fUb3O9WQLpBbwl59DUCGBj4';
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -816,9 +816,9 @@ function renderCal() {
       logs.slice(0, 2).forEach(l => {
         const p = document.createElement('div');
         p.className = 'pill';
-        const base = (db.workers.find(x => x.id === l.workerId) || {}).daily || 0;
-        const s4 = siteName(l.siteId).slice(0, 4);
-        p.textContent = `${s4}·${workerName(l.workerId)}·${l.md}·${KR(base)}원`;
+        const base = (db.workers.find(x => x.id === l.worker_id) || {}).daily || 0;
+        const s4 = siteName(l.site_id).slice(0, 4);
+        p.textContent = `${s4}·${workerName(l.worker_id)}·${l.md}·${KR(base)}원`;
         cell.appendChild(p);
       });
       if (logs.length > 2) {
@@ -847,10 +847,10 @@ function renderHomeList() {
     const dt = new Date(d);
     return dt.getFullYear() === Y && dt.getMonth() + 1 === M
   };
-  const rows = db.workLogs.filter(r => inMonth(r.date) && (wId ? r.workerId === wId : true)).sort((a, b) => a.date.localeCompare(b.date));
+  const rows = db.workLogs.filter(r => inMonth(r.date) && (wId ? r.worker_id === wId : true)).sort((a, b) => a.date.localeCompare(b.date));
   let totalSalary = 0, totalTax = 0, totalNet = 0, totalHours = 0;
   rows.forEach(r => {
-    const w = db.workers.find(x => x.id === r.workerId) || {};
+    const w = db.workers.find(x => x.id === r.worker_id) || {};
     const salary = (r.md || 0) * (w.daily || 0);
     const tax = Math.round(salary * 0.033);
     const net = salary - tax;
@@ -859,7 +859,7 @@ function renderHomeList() {
     totalNet += net;
     totalHours += (r.md || 0);
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${w.name || '(미등록)'}</td><td>${r.date.slice(5)}</td><td>${siteName(r.siteId)}</td><td>${r.md}</td><td>${KR(salary)}원</td><td class="text-red">-${KR(tax)}원</td><td>${KR(net)}원</td>`;
+    tr.innerHTML = `<td>${w.name || '(미등록)'}</td><td>${r.date.slice(5)}</td><td>${siteName(r.site_id)}</td><td>${r.md}</td><td>${KR(salary)}원</td><td class="text-red">-${KR(tax)}원</td><td>${KR(net)}원</td>`;
     tbody.appendChild(tr);
   });
   document.getElementById('totalSalary').textContent = `${KR(totalSalary)}원`;
@@ -870,11 +870,11 @@ function renderHomeList() {
   document.getElementById('btnExportHome').onclick = () => {
     const aoa = [["작업자", "일자(월-일)", "현장", "공수", "총급여", "세금(3.3%)", "실수령액"]];
     rows.forEach(r => {
-      const w = db.workers.find(x => x.id === r.workerId) || {};
+      const w = db.workers.find(x => x.id === r.worker_id) || {};
       const salary = (r.md || 0) * (w.daily || 0);
       const tax = Math.round(salary * 0.033);
       const net = salary - tax;
-      aoa.push([w.name || '', r.date.slice(5), siteName(r.siteId), r.md, salary, -tax, net]);
+      aoa.push([w.name || '', r.date.slice(5), siteName(r.site_id), r.md, salary, -tax, net]);
     });
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), `월간_${ym}`);
@@ -902,8 +902,8 @@ function makeLog2Row(r) {
   const div = document.createElement('div');
   div.className = 'log-2row';
   div.dataset.id = r?.id || 'new';
-  const siteOps = db.sites.map(s => `<option value="${s.id}" ${r?.siteId === s.id ? 'selected' : ''}>${s.name}</option>`).join('');
-  const workerOps = db.workers.map(w => `<option value="${w.id}" ${r?.workerId === w.id ? 'selected' : ''}>${w.name}</option>`).join('');
+  const siteOps = db.sites.map(s => `<option value="${s.id}" ${r?.site_id === s.id ? 'selected' : ''}>${s.name}</option>`).join('');
+  const workerOps = db.workers.map(w => `<option value="${w.id}" ${r?.worker_id === w.id ? 'selected' : ''}>${w.name}</option>`).join('');
   div.innerHTML = `
     <select class="site">${siteOps}</select>
     <select class="worker">${workerOps}</select>
@@ -932,7 +932,7 @@ function saveModalRows() {
     const workerId = row.querySelector('.worker').value;
     const md = parseFloat(row.querySelector('.md').value || 0);
     const note = row.querySelector('.note').value;
-    if (md > 0) keep.push({ id: id === 'new' ? uid() : id, date: modalDate, siteId, workerId, md, note });
+    if (md > 0) keep.push({ id: id === 'new' ? uid() : id, date: modalDate, site_id: siteId, worker_id: workerId, md, note });
   });
   db.workLogs = db.workLogs.filter(w => w.date !== modalDate).concat(keep);
   save();
@@ -982,7 +982,7 @@ function initExpense() {
     const ex = {
       id: uid(),
       date: document.getElementById('exDate').value,
-      site_id: document.getElementById('exSite').value, // Supabase 필드명에 맞게 수정
+      site_id: document.getElementById('exSite').value,
       worker_name: (db.workers.find(w => w.id === document.getElementById('exWorker').value) || {}).name || '',
       category: document.getElementById('exCategory').value,
       amount: parseInt(document.getElementById('exAmount').value || 0),
@@ -996,7 +996,7 @@ function initExpense() {
       alert('지출 저장에 실패했습니다.');
     } else {
       alert('지출 저장 완료');
-      redrawExpense(); // 저장 직후 금전출납부에 즉시 반영
+      redrawExpense();
     }
   };
 
@@ -1011,10 +1011,10 @@ function drawLinkedWork() {
   const tbody = document.querySelector('#logLinkTable tbody');
   tbody.innerHTML = '';
   const logs = month ? db.workLogs.filter(r => r.date.startsWith(month)) : db.workLogs;
-  const filtered = workerId ? logs.filter(r => r.worker_id === workerId) : logs; // Supabase 필드명에 맞게 수정
+  const filtered = workerId ? logs.filter(r => r.worker_id === workerId) : logs;
   filtered.sort((a, b) => a.date.localeCompare(b.date)).forEach(r => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${r.date}</td><td>${siteName(r.site_id)}</td><td>${workerName(r.worker_id)}</td><td>${r.md}</td>`; // Supabase 필드명에 맞게 수정
+    tr.innerHTML = `<td>${r.date}</td><td>${siteName(r.site_id)}</td><td>${workerName(r.worker_id)}</td><td>${r.md}</td>`;
     tr.style.cursor = 'pointer';
     tr.onclick = () => {
       document.getElementById('exSite').value = r.site_id;
@@ -1038,14 +1038,14 @@ function redrawExpense() {
   const budget = site.budget || 0;
 
   // 인건비(총급여/실수령액) 목록 & 합계
-  const laborLogs = (month ? db.workLogs.filter(r => r.site_id === siteId && inMonth(r.date)) : db.workLogs.filter(r => r.site_id === siteId)) // Supabase 필드명에 맞게 수정
+  const laborLogs = (month ? db.workLogs.filter(r => r.site_id === siteId && inMonth(r.date)) : db.workLogs.filter(r => r.site_id === siteId))
     .sort((a, b) => a.date.localeCompare(b.date));
   let laborTotalGross = 0, laborTotalNet = 0;
   const laborBody = document.querySelector('#laborTable tbody');
   laborBody.innerHTML = '';
   laborLogs.forEach(log => {
-    const w = db.workers.find(x => x.id === log.worker_id) || {}; // Supabase 필드명에 맞게 수정
-    const salary = log.md * (w.daily || 0); // 총급여
+    const w = db.workers.find(x => x.id === log.worker_id) || {};
+    const salary = log.md * (w.daily || 0);
     const tax = Math.round(salary * 0.033);
     const net = salary - tax;
     laborTotalGross += salary;
@@ -1065,7 +1065,7 @@ function redrawExpense() {
   document.getElementById('laborTotalNet').textContent = `${KR(laborTotalNet)}원`;
 
   // 경비(현장 매칭)
-  const expenses = (month ? db.expenses.filter(e => e.site_id === siteId && inMonth(e.date)) : db.expenses.filter(e => e.site_id === siteId)) // Supabase 필드명에 맞게 수정
+  const expenses = (month ? db.expenses.filter(e => e.site_id === siteId && inMonth(e.date)) : db.expenses.filter(e => e.site_id === siteId))
     .sort((a, b) => a.date.localeCompare(b.date));
   let expenseTotal = 0;
   const expenseBody = document.querySelector('#expenseTable tbody');
@@ -1102,7 +1102,7 @@ function redrawExpense() {
       ["일자", "작업자", "기본급", "공수", "총급여", "세금(3.3%)", "실수령액"]
     ];
     laborLogs.forEach(log => {
-      const w = db.workers.find(x => x.id === log.worker_id) || {}; // Supabase 필드명에 맞게 수정
+      const w = db.workers.find(x => x.id === log.worker_id) || {};
       const salary = log.md * (w.daily || 0);
       const tax = Math.round(salary * 0.033);
       const net = salary - tax;
@@ -1196,13 +1196,13 @@ function renderProfit() {
     if (site) {
       totalBudget = site.budget || 0;
       totalLabor = db.workLogs
-        .filter(r => r.site_id === siteId && (!month || inMonth(r.date))) // Supabase 필드명에 맞게 수정
+        .filter(r => r.site_id === siteId && (!month || inMonth(r.date)))
         .reduce((sum, r) => {
-          const w = db.workers.find(x => x.id === r.worker_id); // Supabase 필드명에 맞게 수정
+          const w = db.workers.find(x => x.id === r.worker_id);
           return sum + (r.md || 0) * (w ? w.daily : 0);
         }, 0);
       totalExpense = db.expenses
-        .filter(e => e.site_id === siteId && (!month || inMonth(e.date))) // Supabase 필드명에 맞게 수정
+        .filter(e => e.site_id === siteId && (!month || inMonth(e.date)))
         .reduce((sum, e) => sum + (e.amount || 0), 0);
     }
   } else {
@@ -1210,13 +1210,13 @@ function renderProfit() {
     db.sites.forEach(s => {
       totalBudget += s.budget || 0;
       totalLabor += db.workLogs
-        .filter(r => r.site_id === s.id && (!month || inMonth(r.date))) // Supabase 필드명에 맞게 수정
+        .filter(r => r.site_id === s.id && (!month || inMonth(r.date)))
         .reduce((sum, r) => {
-          const w = db.workers.find(x => x.id === r.worker_id); // Supabase 필드명에 맞게 수정
+          const w = db.workers.find(x => x.id === r.worker_id);
           return sum + (r.md || 0) * (w ? w.daily : 0);
         }, 0);
       totalExpense += db.expenses
-        .filter(e => e.site_id === s.id && (!month || inMonth(e.date))) // Supabase 필드명에 맞게 수정
+        .filter(e => e.site_id === s.id && (!month || inMonth(e.date)))
         .reduce((sum, e) => sum + (e.amount || 0), 0);
     });
   }
@@ -1238,10 +1238,10 @@ function renderProfit() {
   if (siteId) {
     const site = db.sites.find(s => s.id === siteId);
     if (site) {
-      const logs = month ? db.workLogs.filter(r => r.site_id === siteId && inMonth(r.date)) : db.workLogs.filter(r => r.site_id === siteId); // Supabase 필드명에 맞게 수정
+      const logs = month ? db.workLogs.filter(r => r.site_id === siteId && inMonth(r.date)) : db.workLogs.filter(r => r.site_id === siteId);
       const byWorker = {};
       logs.forEach(r => {
-        const w = db.workers.find(x => x.id === r.worker_id) || {}; // Supabase 필드명에 맞게 수정
+        const w = db.workers.find(x => x.id === r.worker_id) || {};
         const cur = byWorker[r.worker_id] || (byWorker[r.worker_id] = { md: 0, daily: w.daily || 0, name: w.name || '(미등록)' });
         cur.md += (r.md || 0);
       });
@@ -1258,10 +1258,10 @@ function renderProfit() {
     }
   } else {
     db.sites.forEach(s => {
-      const logs = month ? db.workLogs.filter(r => r.site_id === s.id && inMonth(r.date)) : db.workLogs.filter(r => r.site_id === s.id); // Supabase 필드명에 맞게 수정
+      const logs = month ? db.workLogs.filter(r => r.site_id === s.id && inMonth(r.date)) : db.workLogs.filter(r => r.site_id === s.id);
       const byWorker = {};
       logs.forEach(r => {
-        const w = db.workers.find(x => x.id === r.worker_id) || {}; // Supabase 필드명에 맞게 수정
+        const w = db.workers.find(x => x.id === r.worker_id) || {};
         const cur = byWorker[r.worker_id] || (byWorker[r.worker_id] = { md: 0, daily: w.daily || 0, name: w.name || '(미등록)' });
         cur.md += (r.md || 0);
       });
@@ -1289,8 +1289,8 @@ function renderProfit() {
   if (siteId) {
     const site = db.sites.find(s => s.id === siteId);
     if (site) {
-      const logs = month ? db.workLogs.filter(r => r.site_id === siteId && inMonth(r.date)) : db.workLogs.filter(r => r.site_id === siteId); // Supabase 필드명에 맞게 수정
-      const expenses = month ? db.expenses.filter(e => e.site_id === siteId && inMonth(e.date)) : db.expenses.filter(e => e.site_id === siteId); // Supabase 필드명에 맞게 수정
+      const logs = month ? db.workLogs.filter(r => r.site_id === siteId && inMonth(r.date)) : db.workLogs.filter(r => r.site_id === siteId);
+      const expenses = month ? db.expenses.filter(e => e.site_id === siteId && inMonth(e.date)) : db.expenses.filter(e => e.site_id === siteId);
       
       // 해당 현장의 모든 작업일자를 가져와 첫 번째 달을 찾음
       const allDates = logs.map(log => log.date.substring(0, 7));
@@ -1307,7 +1307,7 @@ function renderProfit() {
             expense: 0 
           };
         }
-        const w = db.workers.find(x => x.id === log.worker_id); // Supabase 필드명에 맞게 수정
+        const w = db.workers.find(x => x.id === log.worker_id);
         byMonth[m][siteId].labor += (log.md || 0) * (w ? w.daily : 0);
       });
       expenses.forEach(exp => {
@@ -1326,8 +1326,8 @@ function renderProfit() {
     }
   } else {
     db.sites.forEach(s => {
-      const logs = month ? db.workLogs.filter(r => r.site_id === s.id && inMonth(r.date)) : db.workLogs.filter(r => r.site_id === s.id); // Supabase 필드명에 맞게 수정
-      const expenses = month ? db.expenses.filter(e => e.site_id === s.id && inMonth(e.date)) : db.expenses.filter(e => e.site_id === s.id); // Supabase 필드명에 맞게 수정
+      const logs = month ? db.workLogs.filter(r => r.site_id === s.id && inMonth(r.date)) : db.workLogs.filter(r => r.site_id === s.id);
+      const expenses = month ? db.expenses.filter(e => e.site_id === s.id && inMonth(e.date)) : db.expenses.filter(e => e.site_id === s.id);
       
       // 해당 현장의 모든 작업일자를 가져와 첫 번째 달을 찾음
       const allDates = logs.map(log => log.date.substring(0, 7));
@@ -1344,7 +1344,7 @@ function renderProfit() {
             expense: 0 
           };
         }
-        const w = db.workers.find(x => x.id === log.worker_id); // Supabase 필드명에 맞게 수정
+        const w = db.workers.find(x => x.id === log.worker_id);
         byMonth[m][s.id].labor += (log.md || 0) * (w ? w.daily : 0);
       });
       expenses.forEach(exp => {
