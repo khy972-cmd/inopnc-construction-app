@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -660,46 +659,33 @@ const KR = n => (n || 0).toLocaleString('ko-KR');
 
 /* ===== Supabase 데이터 로드 ===== */
 async function load() {
-  try {
-    // 작업자 로드
-    const { data: workers, error: workersError } = await supabase
-      .from('workers')
-      .select('id, name, daily');
-    if (workersError) throw workersError;
-    db.workers = workers || [];
+  const [
+    { data: workers, error: workersError },
+    { data: sites,   error: sitesError },
+    { data: workLogs, error: workLogsError },
+    { data: expenses, error: expensesError },
+    { data: receipts, error: receiptsError },
+  ] = await Promise.all([
+    supabase.from('workers').select('id, name, daily'),
+    supabase.from('sites').select('id, company_name, name, budget'),
+    supabase.from('work_logs').select('id, date, site_id, worker_id, md, note'),
+    supabase.from('expenses').select('id, date, site_id, worker_name, category, amount, vendor, address, memo'),
+    supabase.from('receipts').select('id, expense_id, file_name, data'),
+  ]);
 
-    // 현장 로드
-    const { data: sites, error: sitesError } = await supabase
-      .from('sites')
-      .select('id, company_name, name, budget');
-    if (sitesError) throw sitesError;
-    db.sites = sites || [];
+  if (workersError) console.error('작업자 로드 오류:', workersError);
+  if (sitesError)   console.error('현장 로드 오류:', sitesError);
+  if (workLogsError)console.error('작업 로그 로드 오류:', workLogsError);
+  if (expensesError)console.error('경비 로드 오류:', expensesError);
+  if (receiptsError)console.error('영수증 로드 오류:', receiptsError);
 
-    // 작업 로그 로드
-    const { data: workLogs, error: workLogsError } = await supabase
-      .from('work_logs')
-      .select('id, date, site_id, worker_id, md, note');
-    if (workLogsError) throw workLogsError;
-    db.workLogs = workLogs || [];
-
-    // 경비 로드
-    const { data: expenses, error: expensesError } = await supabase
-      .from('expenses')
-      .select('id, date, site_id, worker_name, category, amount, vendor, address, memo');
-    if (expensesError) throw expensesError;
-    db.expenses = expenses || [];
-
-    // 영수증 로드
-    const { data: receipts, error: receiptsError } = await supabase
-      .from('receipts')
-      .select('id, expense_id, file_name, data');
-    if (receiptsError) throw receiptsError;
-    db.receipts = receipts || [];
-  } catch (error) {
-    console.error('데이터 로드 오류:', error);
-    alert('데이터를 불러오는 데 실패했습니다. 페이지를 새로고침해주세요.');
-  }
+  db.workers  = workers  || [];
+  db.sites    = sites    || [];
+  db.workLogs = workLogs || [];
+  db.expenses = expenses || [];
+  db.receipts = receipts || [];
 }
+
 
 /* ===== Supabase 데이터 저장 ===== */
 async function save() {
@@ -1570,12 +1556,20 @@ function initAdmin() {
 
 /* 부트스트랩 */
 async function init() {
-  await load();
-  await initializeData();
+  // 1) 테마/네비 먼저
   initTheme();
   initNav();
+
+  // 2) 초기 데이터(필요시) 먼저 삽입
+  await initializeData();
+
+  // 3) 그 다음 로드
+  await load();
+
+  // 4) 뷰 마운트
   mountView();
 }
+
 
 // 테마 토글 버튼 이벤트 리스너
 document.getElementById('themeToggle').addEventListener('click', toggleTheme);
