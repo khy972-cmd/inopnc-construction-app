@@ -1,328 +1,216 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<title>INOPNC · 건설현장관리</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>INOPNC · 건설현장관리</title>
 
-<!-- 폰트 & 아이콘 -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+  <!-- 폰트 & 아이콘 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
 
-<!-- XLSX -->
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+  <!-- XLSX -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
 
-<!-- Supabase JS 클라이언트 -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
+  <!-- Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
 
-<style>
-:root{
-  /* 라이트 모드 기본 색상 */
-  --p:#0068FE; --t:#111827; --bg:#f6f8fb; --b:#e5e7eb; --g:#6b7280;
-  --space:16px; --lg:24px;
-  --radius:14px;
-  --fz-body:clamp(14px, 1.9vw, 16px);
-  --fz-small:clamp(11px, 1.5vw, 12px);
-  --fz-label:clamp(12px, 1.7vw, 13px);
-  --fz-btn:clamp(12px, 1.9vw, 14px);
-  --fz-h2:clamp(15px, 2.2vw, 16px);
-  --fixed-input-w:14ch;
-  --min-input-w:150px;
-}
+  <style>
+  :root{
+    --p:#0068FE; --t:#111827; --bg:#f6f8fb; --b:#e5e7eb; --g:#6b7280;
+    --space:16px; --lg:24px; --radius:10px;
+    --fz-body:clamp(14px, 1.9vw, 16px);
+    --fz-small:clamp(11px, 1.5vw, 12px);
+    --fz-label:clamp(12px, 1.7vw, 13px);
+    --fz-btn:clamp(12px, 1.9vw, 14px);
+    --fz-h2:clamp(15px, 2.2vw, 16px);
+  }
+  [data-theme="dark"] { --p:#4c8dff; --t:#f3f4f6; --bg:#1f2937; --b:#374151; --g:#9ca3af; }
 
-/* 다크 모드 색상 */
-[data-theme="dark"] {
-  --p:#4c8dff; --t:#f3f4f6; --bg:#1f2937; --b:#374151; --g:#9ca3af;
-}
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; font-family:Inter,Poppins,system-ui,-apple-system,sans-serif;
+    color:var(--t); background:var(--bg); font-size:var(--fz-body);
+    transition: background-color 0.3s, color 0.3s;
+  }
 
-*{box-sizing:border-box}
-html,body{height:100%}
-body{
-  margin:0; font-family:Inter,Poppins,system-ui,-apple-system,sans-serif;
-  color:var(--t); background:var(--bg); font-size:var(--fz-body);
-  transition: background-color 0.3s, color 0.3s;
-}
+  /* 헤더 */
+  header{position:sticky;top:0;z-index:10;background:#fff;color:#1A254F; transition: background-color 0.3s, color 0.3s;}
+  [data-theme="dark"] header { background: #1f2937; color: #f3f4f6; }
+  .header-inner{max-width:1100px;margin:0 auto;padding:var(--space);display:flex;align-items:center;gap:10px;justify-content:space-between}
+  .brand{font-family:Poppins;font-weight:900;font-size:24px;letter-spacing:.2px;color:var(--t); transition: color 0.3s;}
 
-/* 헤더 */
-header{position:sticky;top:0;z-index:10;background:#fff;color:#1A254F; transition: background-color 0.3s, color 0.3s;}
-[data-theme="dark"] header {
-  background: #1f2937;
-  color: #f3f4f6;
-}
-.header-inner{max-width:1100px;margin:0 auto;padding:var(--space);display:flex;align-items:center;gap:10px;justify-content:space-between}
-.brand{font-family:Poppins;font-weight:900;font-size:24px;letter-spacing:.2px;color:var(--t); transition: color 0.3s;}
+  /* 테마 토글 버튼 */
+  .theme-toggle { background: none; border: none; color: var(--t); cursor: pointer; font-size: 20px; padding: 5px; border-radius: 50%; transition: background-color 0.3s; }
+  .theme-toggle:hover { background-color: rgba(0, 0, 0, 0.1); }
+  [data-theme="dark"] .theme-toggle:hover { background-color: rgba(255, 255, 255, 0.1); }
 
-/* 테마 토글 버튼 */
-.theme-toggle {
-  background: none;
-  border: none;
-  color: var(--t);
-  cursor: pointer;
-  font-size: 20px;
-  padding: 5px;
-  border-radius: 50%;
-  transition: background-color 0.3s;
-}
-.theme-toggle:hover {
-  background-color: rgba(0, 0, 0, 0.1);
-}
-[data-theme="dark"] .theme-toggle:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
+  /* 공통 */
+  .number{font-family:Inter;font-weight:800}
+  .app{max-width:1100px;margin:0 auto;padding:var(--space) var(--space) 80px}
+  .card{
+    background:#fff;border-radius:var(--radius);box-shadow:0 8px 24px #00000012;padding:var(--space);border:1px solid var(--b);
+    transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
+  }
+  [data-theme="dark"] .card { background: #374151; border-color: #4b5563; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); }
+  .row{display:flex;gap:var(--space);flex-wrap:wrap}
+  .row>*{flex:1 1 220px}
+  label{font-size:var(--fz-label);font-weight:800;color:var(--t); display:inline-block;margin-bottom:6px; transition: color 0.3s;}
+  input,select,textarea{
+    width:100%;padding:10px;border:1px solid var(--b);border-radius:10px;background:#fff;font-size:var(--fz-body);
+    transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+  }
+  [data-theme="dark"] input, [data-theme="dark"] select, [data-theme="dark"] textarea { background: #4b5563; color: #f3f4f6; border-color: #6b7280; }
+  input::placeholder, textarea::placeholder{color:var(--g); transition: color 0.3s;}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;height:38px;padding:0 12px;border-radius:10px;border:1px solid var(--b);background:#fff;font-weight:800;cursor:pointer;white-space:nowrap;font-size:var(--fz-btn);min-width:88px;line-height:1;
+    transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+  }
+  [data-theme="dark"] .btn { background: #4b5563; border-color: #6b7280; color: #f3f4f6; }
+  .btn.primary{background:var(--p);border-color:var(--p);color:#fff}
+  .btn.warn{background:#fee2e2;border-color:#fecaca;color:#991b1b}
+  .btn.block{width:100%}
+  .text-red{color:#dc2626}
+  .text-blue{color:var(--p)}
 
-/* 공통 */
-.number{font-family:Inter;font-weight:600}
-.app{max-width:1100px;margin:0 auto;padding:var(--space) var(--space) 80px}
-.card{background:#fff;border-radius:var(--radius);box-shadow:0 8px 24px #00000012;padding:var(--space);border:1px solid var(--b); transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;}
-[data-theme="dark"] .card {
-  background: #374151;
-  border-color: #4b5563;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-}
-.row{display:flex;gap:var(--space);flex-wrap:wrap}
-.row>*{flex:1 1 220px}
-label{font-size:var(--fz-label);font-weight:800;color:var(--t); display:inline-block;margin-bottom:6px; transition: color 0.3s;}
-input,select,textarea{width:100%;padding:10px;border:1px solid var(--b);border-radius:10px;background:#fff;font-size:var(--fz-body); transition: background-color 0.3s, border-color 0.3s, color 0.3s;}
-[data-theme="dark"] input, 
-[data-theme="dark"] select, 
-[data-theme="dark"] textarea {
-  background: #4b5563;
-  color: #f3f4f6;
-  border-color: #6b7280;
-}
-input::placeholder, textarea::placeholder{color:var(--g); transition: color 0.3s;}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:38px;padding:0 10px;border-radius:10px;border:1px solid var(--b);background:#fff;font-weight:800;cursor:pointer;white-space:nowrap;font-size:var(--fz-btn);min-width:88px;line-height:1; transition: background-color 0.3s, border-color 0.3s, color 0.3s;}
-[data-theme="dark"] .btn {
-  background: #4b5563;
-  border-color: #6b7280;
-  color: #f3f4f6;
-}
-.btn.primary{background:var(--p);border-color:var(--p);color:#fff; transition: background-color 0.3s, border-color 0.3s, color 0.3s;}
-[data-theme="dark"] .btn.primary {
-  background: #4c8dff;
-  border-color: #4c8dff;
-}
-.btn.warn{background:#fee2e2;border-color:#fecaca;color:#991b1b; transition: background-color 0.3s, border-color 0.3s, color 0.3s;}
-[data-theme="dark"] .btn.warn {
-  background: #7f1d1d;
-  border-color: #991b1b;
-  color: #fecaca;
-}
-.btn.block{width:100%}
-.text-red{color:#dc2626; transition: color 0.3s;}
-.text-blue{color:var(--p);font-weight:700; transition: color 0.3s;}
+  /* 테이블 - 0802 스타일 반영 */
+  .table-scroll{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .table{width:100%;border-collapse:collapse;min-width:820px}
+  .table th,.table td{padding:10px 8px;border-bottom:1px solid #eef1f5;text-align:left;font-size:14px}
+  .table th{background:#fafafa;font-weight:700}
+  .table tfoot td{background:#fafafa;font-weight:800}
+  [data-theme="dark"] .table { color:#f3f4f6 }
+  [data-theme="dark"] .table th { background:#4b5563 }
 
-/* 테이블 */
-.table-scroll{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
-.table{width:100%;border-collapse:collapse;min-width:720px; transition: background-color 0.3s, border-color 0.3s, color 0.3s;}
-[data-theme="dark"] .table {
-  color: #f3f4f6;
-}
-.table th,.table td{padding:8px;border-bottom:1px solid var(--b);text-align:left;font-size:clamp(12px,1.7vw,14px); transition: border-color 0.3s;}
-.table th{background:#fafafa; transition: background-color 0.3s;}
-[data-theme="dark"] .table th {
-  background: #4b5563;
-}
+  /* 캘린더 - 수정된 부분 */
+  .calbar{display:grid;grid-template-columns:1fr 1fr;gap:var(--space);align-items:end}
+  .cal-head{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  .calendar{display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:min-content;gap:6px}
+  .cell{border:1px solid var(--b);border-radius:10px;padding:6px;background:#fff;display:flex;flex-direction:column}
+  [data-theme="dark"] .cell { background:#4b5563; border-color:#6b7280 }
+  .date{font-size:12px;font-weight:900}
+  .pill{margin-top:4px;padding:4px 6px;border-radius:8px;background:#eef3ff;border:1px dashed #9bbdff;font-size:12px;overflow:visible;display:block;white-space:normal;word-break:break-word}
+  [data-theme="dark"] .pill { background:#4b5563; border-color:#6b7280 }
+  .mini{font-size:var(--fz-small);color:var(--g)}
 
-/* 캘린더 */
-.calbar{display:grid;grid-template-columns:1fr 1fr;gap:var(--space);align-items:end}
-.cal-head,.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
-.cell{min-height:92px;border:1px solid var(--b);border-radius:10px;padding:6px;background:#fff;display:flex;flex-direction:column; transition: background-color 0.3s, border-color 0.3s, color 0.3s;}
-[data-theme="dark"] .cell {
-  background: #4b5563;
-  border-color: #6b7280;
-}
-.date{font-size:12px;font-weight:900}
-.pill{margin-top:4px;padding:4px 6px;border-radius:8px;background:#eef3ff;border:1px dashed #9bbdff;font-size:12px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;white-space:normal;word-break:break-word; transition: background-color 0.3s, border-color 0.3s, color 0.3s;}
-[data-theme="dark"] .pill {
-  background: #4b5563;
-  border-color: #6b7280;
-}
-.mini{font-size:var(--fz-small);color:var(--g); transition: color 0.3s;}
+  /* 모달 */
+  dialog{border:none;border-radius:16px;max-width:720px;width:92vw;padding:0;overflow:hidden}
+  dialog::backdrop{background:#00000066}
+  .modal{background:#fff}
+  [data-theme="dark"] dialog, [data-theme="dark"] .modal { background:#374151; color:#f3f4f6 }
+  .modal header,.modal footer{padding:10px var(--space);border-bottom:1px solid var(--b)}
+  .modal footer{border-top:1px solid var(--b);display:flex;gap:8px;justify-content:flex-end}
+  #modalRows{padding:var(--space);display:grid;gap:12px}
+  .log-2row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end}
+  .log-2row .md{width:80px}
+  .log-2row .row2{grid-column:1 / -1;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
 
-/* 모달 */
-dialog{border:none;border-radius:16px;max-width:720px;width:92vw;padding:0;overflow:hidden; transition: background-color 0.3s, color 0.3s;}
-[data-theme="dark"] dialog {
-  background: #374151;
-  color: #f3f4f6;
-}
-dialog::backdrop{background:#00000066}
-.modal{background:#fff; transition: background-color 0.3s, color 0.3s;}
-[data-theme="dark"] .modal {
-  background: #374151;
-}
-.modal header,.modal footer{padding:10px var(--space);border-bottom:1px solid var(--b); transition: border-color 0.3s;}
-[data-theme="dark"] .modal header, 
-[data-theme="dark"] .modal footer {
-  border-color: #4b5563;
-}
-.modal footer{border-top:1px solid var(--b);display:flex;gap:8px;justify-content:flex-end; transition: border-color 0.3s;}
-#modalRows{padding:var(--space);display:grid;gap:12px}
-.log-2row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end}
-.log-2row .md{width:80px}
-.log-2row .row2{grid-column:1 / -1;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+  /* 경비관리 입력폼 */
+  .expense-form{display:grid;grid-template-columns:1fr 1fr;gap:var(--space)}
+  .expense-form .form-field{display:flex;flex-direction:column}
 
-/* 경비관리 상단 폼 - 수정: 2열 레이아웃 */
-.expense-form{display:grid;grid-template-columns:1fr 1fr;gap:var(--space)}
-.expense-form .form-field{display:flex;flex-direction:column}
+  /* 작업로그 연동 필터 */
+  .log-filter{display:grid;grid-template-columns:1fr 1fr;gap:var(--space);align-items:end}
 
-/* 작업로그 연동 필터 */
-.log-filter{display:grid;grid-template-columns:1fr 1fr;gap:var(--space);align-items:end}
+  /* 금전출납부 */
+  .ledger-container{display:flex;flex-direction:column;gap:12px}
+  .ledger-row{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+  .ledger-row .ledger-col{flex:1 1 280px}
 
-/* 금전출납부 */
-.ledger-container{display:flex;flex-direction:column;gap:12px}
-.ledger-row{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
-.ledger-row .ledger-col{flex:1 1 280px}
+  /* 수익분석 */
+  .profit-filter{display:grid;grid-template-columns:1fr 1fr;gap:var(--space);align-items:end}
 
-/* 수익분석 */
-.profit-filter{display:grid;grid-template-columns:1fr 1fr;gap:var(--space);align-items:end}
-
-/* 관리자설정(모바일 최적화 & 버튼 우측정렬 & 여백 축소) */
-.admin-grid{display:grid;grid-template-columns:1fr;gap:16px;max-width:100%}
-.admin-add-row{display:grid;gap:12px;margin-bottom:12px} /* 수정: 그리드 레이아웃으로 변경 */
-.admin-add-row.worker-grid{grid-template-columns:repeat(3, 1fr)} /* 작업자 관리: 3열 그리드 */
-.admin-add-row.site-grid{grid-template-columns:repeat(4, 1fr)} /* 현장 관리: 4열 그리드 */
-.admin-add-row > div{display:flex;flex-direction:column;min-width:0} /* 수정: 최소 너비 0으로 설정하여 그리드 아이템 축소 방지 */
-.admin-add-row label{margin-bottom:4px}
-.admin-add-row .btn-container{display:flex;justify-content:flex-end} /* 버튼 컨테이너 추가 */
-.table-wrap{overflow-x:auto}
-.admin-table{width:100%;min-width:720px} /* 수정: 수익분석 탭과 동일한 폭으로 변경 */
-.admin-table th,.admin-table td{padding:3px;border-bottom:1px solid var(--b);text-align:left;font-size:clamp(12px,1.7vw,14px); transition: border-color 0.3s;}
-.admin-table th{background:#fafafa; transition: background-color 0.3s;}
-[data-theme="dark"] .admin-table th {
-  background: #4b5563;
-}
-.admin-table .actions{text-align:right;white-space:nowrap}
-.admin-table th.actions, .admin-table td.actions{padding-left:2px}
-.wName,.wDaily,.sCompany,.sName,.sBudget{width:100%;min-width:0} /* 수정: 그리드 내에서 너비 자동 조정 */
-.wDaily,.sBudget{text-align:right}
-.admin-table .btn{min-width:auto;padding:6px 10px;height:38px} /* 수정: 삭제 버튼과 동일한 높이로 변경 */
-.btn-add-worker{height:38px;min-width:auto;padding:6px 10px} /* 수정: 추가 버튼에 적용 */
-
-/* 하단 네비 */
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:20;background:var(--p);display:grid;grid-template-columns:repeat(4,1fr);box-shadow:0 -4px 12px rgba(0,0,0,0.1); transition: background-color 0.3s, box-shadow 0.3s;}
-[data-theme="dark"] .bottom-nav {
-  background: #374151;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.5);
-}
-.nav-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;color:#fff;cursor:pointer;border:none;background:transparent;transition:.2s; transition: background-color 0.3s, color 0.3s;}
-.nav-btn i{font-size:20px;margin-bottom:4px}
-.nav-btn span{font-size:10px;font-weight:600}
-.nav-btn.active{background:#ffffff22; transition: background-color 0.3s;}
-[data-theme="dark"] .nav-btn.active {
-  background: rgba(255, 255, 255, 0.1);
-}
-.nav-btn:hover{background:#ffffff33; transition: background-color 0.3s;}
-[data-theme="dark"] .nav-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-/* 아코디언 */
-.accordion{border:1px solid var(--b);border-radius:10px;margin-bottom:10px;overflow:hidden; transition: border-color 0.3s;}
-[data-theme="dark"] .accordion {
-  border-color: #4b5563;
-}
-.accordion-header{background:#f8fafc;padding:12px 16px;font-weight:800;cursor:pointer;display:flex;justify-content:space-between;align-items:center; transition: background-color 0.3s, color 0.3s;}
-[data-theme="dark"] .accordion-header {
-  background: #4b5563;
-  color: #f3f4f6;
-}
-.accordion-content{display:none;padding:16px; transition: background-color 0.3s, color 0.3s;}
-[data-theme="dark"] .accordion-content {
-  background: #374151;
-  color: #f3f4f6;
-}
-.accordion.active .accordion-content{display:block}
-.accordion.active .accordion-header i{transform:rotate(180deg)}
-.accordion-header i{transition:transform .3s}
-
-/* 총계행 */
-.totals-row{font-weight:800;background:#f0f9ff; transition: background-color 0.3s, color 0.3s;}
-[data-theme="dark"] .totals-row {
-  background: #374151;
-}
-.totals-row td{text-align:left !important}
-
-/* 순이익 요약 카드 - 다크모드 배경색 수정 */
-.profit-summary-card {
-  background: #f0f9ff;
-  border-radius: 10px;
-  padding: 12px;
-  margin-top: 16px;
-  transition: background-color 0.3s;
-}
-[data-theme="dark"] .profit-summary-card {
-  background: #374151;
-}
-
-/* 반응형(모바일 버튼 가림 방지) */
-@media (max-width: 600px) {
-  /* 기본 레이아웃 조정 */
-  .app{padding:12px 12px 70px}
-  .card{padding:12px}
-  
-  /* 버튼 조정 */
-  .btn{height:40px;min-width:72px;padding:0 10px}
-  
-  /* 관리자 설정 폼 조정 */
-  .admin-add-row{gap:8px;margin-bottom:8px}
-  
-  /* 작업자 관리: 모바일에서 1열 */
-  .admin-add-row.worker-grid{grid-template-columns:1fr}
-  
-  /* 현장 관리: 모바일에서 1열 */
-  .admin-add-row.site-grid{grid-template-columns:1fr}
-  
-  /* 입력 필드 너비 자동 조정 */
+  /* 관리자설정 */
+  .admin-grid{display:grid;grid-template-columns:1fr;gap:16px;max-width:100%}
+  .admin-add-row{display:grid;gap:12px;margin-bottom:12px}
+  .admin-add-row.worker-grid{grid-template-columns:repeat(3, 1fr)}
+  .admin-add-row.site-grid{grid-template-columns:repeat(4, 1fr)}
+  .admin-add-row > div{display:flex;flex-direction:column;min-width:0}
+  .admin-add-row label{margin-bottom:4px}
+  .admin-add-row .btn-container{display:flex;justify-content:flex-end}
+  .table-wrap{overflow-x:auto}
+  .admin-table{width:100%;min-width:720px}
+  .admin-table th,.admin-table td{padding:3px;border-bottom:1px solid var(--b);text-align:left;font-size:clamp(12px,1.7vw,14px)}
+  .admin-table th{background:#fafafa}
+  [data-theme="dark"] .admin-table th { background:#4b5563 }
+  .admin-table .actions{text-align:right;white-space:nowrap}
+  .admin-table th.actions, .admin-table td.actions{padding-left:2px}
   .wName,.wDaily,.sCompany,.sName,.sBudget{width:100%;min-width:0}
-  
-  /* 버튼 컨테이너 조정 */
-  .admin-add-row .btn-container{grid-column:1 / -1;justify-content:flex-end;margin-top:8px}
-  
-  /* 테이블 최소 너비 조정 */
-  .admin-table{min-width:0}
-  
-  /* 테이블 셀 패딩 조정 */
-  .admin-table th,.admin-table td{padding:4px}
-  
-  /* 작업자명/현장명 입력 필드 너비 조정 */
-  .admin-table .wName,.admin-table .sName{min-width:100px}
-}
+  .wDaily,.sBudget{text-align:right}
+  .admin-table .btn{min-width:auto;padding:6px 10px;height:38px}
+  .btn-add-worker{height:38px;min-width:auto;padding:6px 10px}
 
-/* 더 작은 화면에서 추가 조정 */
-@media (max-width: 480px) {
-  /* 버튼 크기 조정 */
-  .btn{min-width:60px}
-  
-  /* 입력 필드 높이 조정 */
-  input,select,textarea{padding:8px}
-  
-  /* 테이블 헤더 폰트 크기 조정 */
-  .admin-table th{font-size:11px}
-  
-  /* 테이블 셀 패딩 축소 */
-  .admin-table th,.admin-table td{padding:3px}
-}
+  /* 하단 네비 */
+  .bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:20;background:var(--p);display:grid;grid-template-columns:repeat(4,1fr);box-shadow:0 -4px 12px rgba(0,0,0,0.1); border-radius:0 !important;}
+  [data-theme="dark"] .bottom-nav { background:#374151; box-shadow:0 -4px 12px rgba(0,0,0,0.5) }
+  .nav-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;color:#fff;cursor:pointer;border:none;background:transparent;transition:.2s; border-radius:0 !important;}
+  .nav-btn i{font-size:20px;margin-bottom:4px}
+  .nav-btn span{font-size:10px;font-weight:600}
+  .nav-btn.active{background:#ffffff22}
+  .nav-btn:hover{background:#ffffff33}
 
-/* 아주 작은 화면에서 최종 조정 */
-@media (max-width: 360px) {
-  /* 테이블 최소 너비 제거 */
-  .admin-table{min-width:0}
-  
-  /* 삭제 버튼 크기 조정 */
-  .admin-table .btn{padding:4px 8px}
-}
-</style>
+  /* 아코디언 */
+  .accordion{border:1px solid var(--b);border-radius:10px;margin-bottom:10px;overflow:hidden}
+  .accordion-header{background:#f8fafc;padding:12px 16px;font-weight:800;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+  [data-theme="dark"] .accordion-header { background:#4b5563; color:#f3f4f6 }
+  .accordion-content{display:none;padding:16px}
+  [data-theme="dark"] .accordion-content { background:#374151; color:#f3f4f6 }
+  .accordion.active .accordion-content{display:block}
+  .accordion.active .accordion-header i{transform:rotate(180deg)}
+  .accordion-header i{transition:transform .3s}
+
+  /* 총계행 - 다크모드 최적화 */
+  .totals-row{font-weight:800;background:#f0f9ff}
+  [data-theme="dark"] .totals-row { background:#374151 }
+  [data-theme="dark"] .totals-row td { background: #374151; }
+  .totals-row td{text-align:left !important}
+
+  /* 순이익 카드 */
+  .profit-summary-card { background:#f0f9ff; border-radius:10px; padding:12px; margin-top:16px }
+  [data-theme="dark"] .profit-summary-card { background:#374151 }
+
+  /* 범용 라운드 */
+  :where(.card,.btn,input,select,textarea,.cell,.pill,dialog,.modal,.accordion,.accordion-header,.accordion-content,.profit-summary-card){ border-radius:10px !important; }
+
+  @media (max-width: 600px) {
+    .app{padding:12px 12px 70px}
+    .card{padding:12px}
+    .btn{height:40px;min-width:72px;padding:0 10px}
+    .admin-add-row{gap:8px;margin-bottom:8px}
+    .admin-add-row.worker-grid{grid-template-columns:1fr}
+    .admin-add-row.site-grid{grid-template-columns:1fr}
+    .wName,.wDaily,.sCompany,.sName,.sBudget{width:100%;min-width:0}
+    .admin-add-row .btn-container{grid-column:1 / -1;justify-content:flex-end;margin-top:8px}
+    .admin-table{min-width:0}
+    .admin-table th,.admin-table td{padding:4px}
+    .admin-table .wName,.admin-table .sName{min-width:100px}
+  }
+  @media (max-width: 480px) {
+    .btn{min-width:60px}
+    input,select,textarea{padding:8px}
+    .admin-table th{font-size:11px}
+    .admin-table th,.admin-table td{padding:3px}
+  }
+  @media (max-width: 360px) {
+    .admin-table{min-width:0}
+    .admin-table .btn{padding:4px 8px}
+  }
+  </style>
 </head>
 <body>
 <header>
   <div class="header-inner">
-    <div class="brand">INOPNC</div>
-    <button class="theme-toggle" id="themeToggle" aria-label="테마 전환">
-      <i class="fas fa-sun" id="themeIcon"></i>
-    </button>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <button class="btn" id="btnBack" title="뒤로가기"><i class="fas fa-arrow-left"></i></button>
+      <div class="brand">INOPNC</div>
+    </div>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <button class="btn" id="btnRefresh" title="새로고침"><i class="fas fa-sync-alt"></i></button>
+      <button class="theme-toggle" id="themeToggle" aria-label="테마 전환"><i class="fas fa-sun" id="themeIcon"></i></button>
+    </div>
   </div>
 </header>
 
@@ -345,7 +233,6 @@ dialog::backdrop{background:#00000066}
       <div><label for="monthPicker">월</label><input class="w-month" type="month" id="monthPicker" aria-label="월 선택" /></div>
       <div><label for="homeWorker">작업자</label><select id="homeWorker"><option value="">전체</option></select></div>
     </div>
-
     <div class="cal-head" style="margin-top:var(--space)">
       <div class="mini">일</div><div class="mini">월</div><div class="mini">화</div><div class="mini">수</div><div class="mini">목</div><div class="mini">금</div><div class="mini">토</div>
     </div>
@@ -384,7 +271,7 @@ dialog::backdrop{background:#00000066}
 <!-- 경비관리 -->
 <template id="expenseTpl">
   <div class="grid-1">
-    <!-- 입력폼 - 수정: 2열 레이아웃 -->
+    <!-- 입력폼 -->
     <div class="card">
       <h2 style="margin:0 0 var(--space); font-size:var(--fz-h2); color:var(--g)">경비 입력</h2>
       <div class="expense-form">
@@ -434,37 +321,34 @@ dialog::backdrop{background:#00000066}
   <div class="card" style="margin-top: var(--lg);">
     <h2 style="margin:0 0 var(--space); font-size:var(--fz-h2); color:var(--g)">금전출납부</h2>
     <div class="ledger-container">
-      <!-- 1행: 현장 -->
       <div class="ledger-row">
         <div class="ledger-col">
           <label for="ledgerSite">현장</label>
           <select id="ledgerSite"></select>
         </div>
-      </div>
-      <!-- 2행: 조회일 -->
-      <div class="ledger-row">
-        <div class="ledger-col" style="max-width:280px">
-          <label for="ledgerMonth">조회일</label>
+        <div class="ledger-col">
+          <label for="ledgerMonth">월</label>
           <input class="w-month" type="month" id="ledgerMonth">
         </div>
       </div>
 
-      <!-- 3행: 인건비 현황(현장명 매칭, 날짜별 리스트) -->
       <div class="ledger-section">
         <div style="font-weight:900;margin-bottom:8px">인건비 현황</div>
         <div class="table-scroll">
           <table class="table" id="laborTable">
             <thead>
               <tr>
-                <th>일자</th><th>작업자</th><th>기본급</th><th>공수</th><th>총급여</th><th>세금(3.3%)</th><th>실수령액</th>
+                <!-- 홈 출력현황과 동일 -->
+                <th>작업자</th><th>일자</th><th>현장</th><th>공수</th><th>총급여</th><th>세금(3.3%)</th><th>실수령액</th>
               </tr>
             </thead>
             <tbody></tbody>
             <tfoot>
               <tr class="totals-row">
-                <td colspan="4">합계</td>
-                <td id="laborTotalGross" class="number">0원</td>
-                <td></td>
+                <td colspan="3">합계</td>
+                <td id="laborTotalHours" class="number">0</td>
+                <td id="laborTotalSalary" class="number">0원</td>
+                <td id="laborTotalTax" class="number text-red">0원</td>
                 <td id="laborTotalNet" class="number">0원</td>
               </tr>
             </tfoot>
@@ -472,14 +356,13 @@ dialog::backdrop{background:#00000066}
         </div>
       </div>
 
-      <!-- 4행: 경비 현황(현장명 매칭) -->
       <div class="ledger-section">
         <div style="font-weight:900;margin-bottom:8px">경비 현황</div>
         <div class="table-scroll">
           <table class="table" id="expenseTable">
             <thead>
               <tr>
-                <th>사용일</th><th>작업자</th><th>항목</th><th>금액</th><th>사용처</th><th>주소</th><th>메모</th><th>영수증</th><th>삭제</th>
+                <th>사용일</th><th>작업자</th><th>항목</th><th>금액</th><th>사용처</th><th>주소</th><th>메모</th><th>삭제</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -487,14 +370,13 @@ dialog::backdrop{background:#00000066}
               <tr class="totals-row">
                 <td colspan="3">합계</td>
                 <td id="expenseTotalAmount" class="number">0원</td>
-                <td colspan="5"></td>
+                <td colspan="4"></td>
               </tr>
             </tfoot>
           </table>
         </div>
       </div>
 
-      <!-- 5행: 순수익 -->
       <div class="profit-summary-card">
         <div style="text-align:center; width:100%">
           <div style="font-size:clamp(14px, 1.9vw, 16px); font-weight:800; margin-bottom:8px">순수익 계산</div>
@@ -510,7 +392,6 @@ dialog::backdrop{background:#00000066}
         </div>
       </div>
 
-      <!-- 마지막: 엑셀 내보내기(모바일 폭: block) -->
       <div class="ledger-row">
         <button class="btn primary block" id="btnExportLedger">금전출납 엑셀</button>
       </div>
@@ -540,23 +421,18 @@ dialog::backdrop{background:#00000066}
         <table class="table" id="payWorkerTable">
           <thead>
             <tr>
-              <th>년-월</th>
-              <th>현장</th>
-              <th>작업자</th>
-              <th>공수</th>
-              <th>총급여</th>
-              <th>실수령액(3.3%공제)</th>
+              <!-- 홈/경비관리와 동일한 포맷(직관적 비교) -->
+              <th>작업자</th><th>일자</th><th>현장</th><th>공수</th><th>총급여</th><th>세금(3.3%)</th><th>실수령액</th>
             </tr>
           </thead>
           <tbody></tbody>
           <tfoot>
             <tr class="totals-row">
-              <td></td>
-              <td>합계</td>
-              <td></td>
-              <td></td>
-              <td id="profitTotalSalary" class="number">0원</td>
-              <td id="profitTotalNet" class="number">0원</td>
+              <td colspan="3">합계</td>
+              <td id="payTotalHours" class="number">0</td>
+              <td id="payTotalSalary" class="number">0원</td>
+              <td id="payTotalTax" class="number text-red">0원</td>
+              <td id="payTotalNet" class="number">0원</td>
             </tr>
           </tfoot>
         </table>
@@ -567,7 +443,7 @@ dialog::backdrop{background:#00000066}
       <div style="font-weight:900;margin-bottom:8px">금전출납</div>
       <div class="table-scroll">
         <table class="table" id="siteFinanceTable">
-          <thead><tr><th>년-월</th><th>현장</th><th>총 예산</th><th>인건비(총급여)</th><th>경비지출</th><th>순수익</th></tr></thead>
+          <thead><tr><th>년-월</th><th>현장</th><th>총 예산</th><th>인건비(총급여)</th><th>경비지출</th><th>순이익</th></tr></thead>
           <tbody></tbody>
           <tfoot>
             <tr class="totals-row">
@@ -599,7 +475,7 @@ dialog::backdrop{background:#00000066}
             <tr>
               <th>작업자명</th>
               <th>일당</th>
-              <th class="actions"></th> <!-- 수정: "작업" 텍스트 제거 -->
+              <th class="actions"></th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -622,7 +498,7 @@ dialog::backdrop{background:#00000066}
               <th>회사</th>
               <th>현장명</th>
               <th>총 예산</th>
-              <th class="actions"></th> <!-- 수정: "작업" 텍스트 제거 -->
+              <th class="actions"></th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -633,327 +509,298 @@ dialog::backdrop{background:#00000066}
 </template>
 
 <!-- 작업 모달 -->
-<dialog id="logModal">
-  <div class="modal">
-    <header><div style="font-weight:900;color:#fff" id="modalDate">작업기록</div></header>
-    <div id="modalRows"></div>
-    <footer>
-      <button class="btn" id="btnAddRow">+ 추가</button>
-      <button class="btn" id="btnCloseModal">닫기</button>
-      <button class="btn primary" id="btnSaveLogs">저장</button>
-    </footer>
-  </div>
-</dialog>
+<template id="logTpl">
+  <dialog id="logModal">
+    <div class="modal">
+      <header><div style="font-weight:900;color:#fff" id="modalDate">작업기록</div></header>
+      <div id="modalRows"></div>
+      <footer>
+        <button class="btn" id="btnAddRow">+ 추가</button>
+        <button class="btn" id="btnCloseModal">닫기</button>
+        <button class="btn primary" id="btnSaveLogs">저장</button>
+      </footer>
+    </div>
+  </dialog>
+</template>
 
 <script>
-/* ===== Supabase 연동 설정 ===== */
+/* ===== Supabase 설정 ===== */
 const SUPABASE_URL = 'https://pkrgosfznqzklabzjllv.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrcmdvc2Z6bnF6a2xhYnpqbGx2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwNDg1MjUsImV4cCI6MjA3MDYyNDUyNX0.-PsE0Cpgoonjw5ZSwzI6fUb3O9WQLpBbwl59DUCGBj4';
-
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-/* ===== 데이터 저장소 ===== */
-const db = { sites: [], workers: [], workLogs: [], expenses: [], receipts: [] };
-const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
+/* ===== 데이터 저장소/상태 ===== */
+const db = { sites: [], workers: [], workLogs: [], expenses: [] };
 const KR = n => (n || 0).toLocaleString('ko-KR');
+const fmtYM = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+const fmtYMD = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 
-/* ===== Supabase 데이터 로드 ===== */
-async function load() {
-  const [
-    { data: workers, error: workersError },
-    { data: sites,   error: sitesError },
-    { data: workLogs, error: workLogsError },
-    { data: expenses, error: expensesError },
-    { data: receipts, error: receiptsError },
-  ] = await Promise.all([
-    supabase.from('workers').select('id, name, daily'),
-    supabase.from('sites').select('id, company_name, name, budget'),
-    supabase.from('work_logs').select('id, date, site_id, worker_id, md, note'),
-    supabase.from('expenses').select('id, date, site_id, worker_name, category, amount, vendor, address, memo'),
-    supabase.from('receipts').select('id, expense_id, file_name, data'),
-  ]);
-
-  if (workersError) console.error('작업자 로드 오류:', workersError);
-  if (sitesError)   console.error('현장 로드 오류:', sitesError);
-  if (workLogsError)console.error('작업 로그 로드 오류:', workLogsError);
-  if (expensesError)console.error('경비 로드 오류:', expensesError);
-  if (receiptsError)console.error('영수증 로드 오류:', receiptsError);
-
-  db.workers  = workers  || [];
-  db.sites    = sites    || [];
-  db.workLogs = workLogs || [];
-  db.expenses = expenses || [];
-  db.receipts = receipts || [];
+/* 최근 90일 범위(로딩 최적화) */
+function getFromDate(days=90){
+  const d = new Date(); d.setDate(d.getDate()-days);
+  return fmtYMD(d);
 }
 
-
-/* ===== Supabase 데이터 저장 ===== */
-async function save() {
-  try {
-    // 작업자 저장
-    const { error: workersError } = await supabase
-      .from('workers')
-      .upsert(db.workers);
-    if (workersError) throw workersError;
-
-    // 현장 저장
-    const { error: sitesError } = await supabase
-      .from('sites')
-      .upsert(db.sites);
-    if (sitesError) throw sitesError;
-
-    // 작업 로그 저장
-    const { error: workLogsError } = await supabase
-      .from('work_logs')
-      .upsert(db.workLogs);
-    if (workLogsError) throw workLogsError;
-
-    // 경비 저장
-    const { error: expensesError } = await supabase
-      .from('expenses')
-      .upsert(db.expenses);
-    if (expensesError) throw expensesError;
-
-    // 영수증 저장
-    const { error: receiptsError } = await supabase
-      .from('receipts')
-      .upsert(db.receipts);
-    if (receiptsError) throw receiptsError;
-  } catch (error) {
-    console.error('데이터 저장 오류:', error);
-    alert('데이터를 저장하는 데 실패했습니다.');
+/* ===== 앱 상태 ===== */
+const appState = {
+  currentRoute: 'home',
+  viewStates: {
+    home: { month: '', worker: '' },
+    expense: { site: '', date: '', worker: '', category: '', amount: '', vendor: '', address: '', memo: '', ledgerSite:'', ledgerMonth:'' },
+    profit: { site: '', month: '' },
+    admin: { workerName: '', daily: '', companyName: '', siteName: '', budget: '' }
   }
+};
+
+/* ===== 공용 유틸 ===== */
+const siteName  = id => (db.sites.find(s => s.id === id) || {}).name || '';
+const workerById = id => db.workers.find(w => w.id === id) || null;
+const workerName = id => (workerById(id) || {}).name || '';
+
+function fillSiteSelect(sel){
+  const includeAll = sel.id !== 'exSite'; // 입력폼 제외
+  let ops = includeAll ? '<option value="">전체</option>' : '';
+  ops += db.sites.map(s => `<option value="${s.id}">${(s.company_name||'')+' '+(s.name||'')}</option>`).join('');
+  sel.innerHTML = ops;
+}
+function fillWorkerSelect(sel){
+  sel.innerHTML = db.workers.map(w=>`<option value="${w.id}">${w.name}</option>`).join('');
 }
 
-/* ===== 초기 데이터 설정 (첫 실행 시) ===== */
-async function initializeData() {
-  try {
-    // 작업자 데이터 삽입 (테이블이 비어있을 경우만)
-    const { count: workerCount } = await supabase
-      .from('workers')
-      .select('*', { count: 'exact', head: true });
-    
-    if (workerCount === 0) {
-      await supabase.from('workers').insert([
-        { name: '김작업', daily: 150000 },
-        { name: '이관리', daily: 180000 }
-      ]);
-    }
+/* ===== 집계 함수 (중복 제거) ===== */
+function computeLaborRows(siteId, month, homeSiteId=null){
+  const [Y, M] = month ? month.split('-').map(Number) : [null, null];
+  const inMonth = d => {
+    if (!month) return true;
+    const dt = new Date(d);
+    return dt.getFullYear() === Y && dt.getMonth() + 1 === M;
+  };
 
-    // 현장 데이터 삽입 (테이블이 비어있을 경우만)
-    const { count: siteCount } = await supabase
-      .from('sites')
-      .select('*', { count: 'exact', head: true });
-    
-    if (siteCount === 0) {
-      await supabase.from('sites').insert([
-        { company_name: 'INOPNC', name: '시흥시청역 현장', budget: 80000000 },
-        { company_name: 'INOPNC', name: '부천 대장 현장', budget: 120000000 }
-      ]);
-    }
-  } catch (error) {
-    console.error('초기 데이터 설정 오류:', error);
-    alert('초기 데이터 설정에 실패했습니다.');
-  }
-}
+  const siteFilter = siteId || homeSiteId;
+  const logs = (siteFilter ? db.workLogs.filter(r=>r.site_id===siteFilter) : db.workLogs)
+                .filter(r=> inMonth(r.date))
+                .sort((a,b)=> a.date.localeCompare(b.date));
 
-/* 테마 관리 */
-function initTheme() {
-  const savedTheme = localStorage.getItem('theme');
-  const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const theme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
-  
-  document.documentElement.setAttribute('data-theme', theme);
-  updateThemeIcon(theme);
-}
-
-function updateThemeIcon(theme) {
-  const themeIcon = document.getElementById('themeIcon');
-  if (theme === 'dark') {
-    themeIcon.classList.remove('fa-sun');
-    themeIcon.classList.add('fa-moon');
-  } else {
-    themeIcon.classList.remove('fa-moon');
-    themeIcon.classList.add('fa-sun');
-  }
-}
-
-function toggleTheme() {
-  const currentTheme = document.documentElement.getAttribute('data-theme');
-  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-  
-  document.documentElement.setAttribute('data-theme', newTheme);
-  localStorage.setItem('theme', newTheme);
-  updateThemeIcon(newTheme);
-}
-
-/* 라우팅 */
-let currentRoute = 'home';
-function initNav() {
-  const navBtns = document.querySelectorAll('.nav-btn');
-  navBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const route = btn.getAttribute('data-route');
-      if (route !== currentRoute) {
-        currentRoute = route;
-        mountView();
-        navBtns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-      }
-    });
+  const rows = logs.map(log=>{
+    const w = workerById(log.worker_id) || {};
+    const salary = (log.md||0) * (w.daily||0);
+    const tax = Math.round(salary*0.033);
+    const net = salary - tax;
+    return {
+      worker: w.name || '(미등록)',
+      date: log.date,
+      site: siteName(log.site_id),
+      md: log.md,
+      salary: KR(salary)+'원',
+      tax: '-'+KR(tax)+'원',
+      net: KR(net)+'원',
+      worker_id: log.worker_id
+    };
   });
-}
-function mountView() {
-  const v = document.getElementById('view');
-  const t = document.getElementById(currentRoute + 'Tpl');
-  v.innerHTML = '';
-  v.appendChild(t.content.cloneNode(true));
-  if (currentRoute === 'home') initHome();
-  if (currentRoute === 'expense') initExpense();
-  if (currentRoute === 'profit') initProfit();
-  if (currentRoute === 'admin') initAdmin();
+
+  const totalHours = logs.reduce((s,l)=> s+(l.md||0), 0);
+  const totalGross = logs.reduce((s,l)=> {
+    const w = workerById(l.worker_id) || {};
+    return s + (l.md||0) * (w.daily||0);
+  }, 0);
+  const totalTax = Math.round(totalGross*0.033);
+  const totalNet = totalGross - totalTax;
+
+  return { rows, totalHours, totalGross, totalTax, totalNet };
 }
 
-/* 유틸 */
-const fmtYM = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-const fmtYMD = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-const siteName = id => (db.sites.find(s => s.id === id) || {}).name || '';
-const workerName = id => (db.workers.find(w => w.id === id) || {}).name || '';
-const fillSiteSelect = sel => {
-  let options = '<option value="">전체</option>';
-  options += db.sites.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-  sel.innerHTML = options;
-};
-const fillWorkerSelect = sel => {
-  sel.innerHTML = db.workers.map(w => `<option value="${w.id}">${w.name}</option>`).join('')
-};
+function computeExpenseRows(siteId, month, homeSiteId=null){
+  const [Y, M] = month ? month.split('-').map(Number) : [null, null];
+  const inMonth = d => {
+    if (!month) return true;
+    const dt = new Date(d);
+    return dt.getFullYear() === Y && dt.getMonth() + 1 === M;
+  };
+
+  const siteFilter = siteId || homeSiteId;
+  const exps = (siteFilter ? db.expenses.filter(e=>e.site_id===siteFilter) : db.expenses)
+              .filter(e=> inMonth(e.date))
+              .sort((a,b)=> a.date.localeCompare(b.date));
+
+  const rows = exps.map(e => ({
+    date: e.date,
+    worker_name: e.worker_name || workerName(e.worker_id) || '',
+    category: e.category,
+    amount: KR(e.amount)+'원',
+    vendor: e.vendor || '',
+    address: e.address || '',
+    memo: e.memo || '',
+    id: e.id
+  }));
+  const total = exps.reduce((s,e)=> s+(e.amount||0), 0);
+  return { rows, total };
+}
+
+/* ===== 렌더 함수 (중복 제거) ===== */
+function renderLaborTable(targetEl, laborRows, totalHours, totalGross, totalTax, totalNet, idPrefix='labor'){
+  const tbody = targetEl.querySelector('tbody');
+  tbody.innerHTML = '';
+  laborRows.forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${r.worker}</td><td>${r.date}</td><td>${r.site}</td><td>${r.md}</td><td>${r.salary}</td><td class="text-red">${r.tax}</td><td>${r.net}</td>`;
+    tbody.appendChild(tr);
+  });
+  const set = (id, val) => { const el=targetEl.querySelector('#'+id); if(el) el.textContent = val; };
+  set(`${idPrefix}TotalHours`,   totalHours);
+  set(`${idPrefix}TotalSalary`,  KR(totalGross)+'원');
+  set(`${idPrefix}TotalTax`,     '-'+KR(totalTax)+'원');
+  set(`${idPrefix}TotalNet`,     KR(totalNet)+'원');
+}
+function renderExpenseTable(targetEl, expenseRows, expenseTotal, withDelete){
+  const tbody = targetEl.querySelector('tbody');
+  tbody.innerHTML='';
+  expenseRows.forEach(row=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${row.date}</td><td>${row.worker_name}</td><td>${row.category}</td><td>${row.amount}</td><td>${row.vendor}</td><td>${row.address}</td><td>${row.memo}</td>${withDelete? `<td><button class="btn warn" onclick="deleteExpense(${row.id})">삭제</button></td>` : '<td></td>'}`;
+    tbody.appendChild(tr);
+  });
+  const totEl = targetEl.querySelector('#expenseTotalAmount');
+  if (totEl) totEl.textContent = KR(expenseTotal)+'원';
+}
 
 /* ===== 홈 ===== */
-function initHome() {
+function initHome(){
   const mp = document.getElementById('monthPicker');
-  mp.value = fmtYM(new Date());
+  // 상태가 없을 경우에만 현재 월로 초기화
+  if (!appState.viewStates.home.month) {
+    mp.value = fmtYM(new Date());
+  }
   const workerSel = document.getElementById('homeWorker');
-  workerSel.innerHTML = '<option value="">전체</option>' + db.workers.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
-  const rerender = () => {
-    renderCal();
-    renderHomeList();
-  };
-  mp.onchange = rerender;
-  workerSel.onchange = rerender;
-  renderCal();
-  renderHomeList();
+  workerSel.innerHTML = '<option value="">전체</option>' + db.workers.map(w=>`<option value="${w.id}">${w.name}</option>`).join('');
+
+  const rerender = () => { renderCal(); renderHomeList(); };
+  mp.onchange = rerender; workerSel.onchange = rerender;
+  renderCal(); renderHomeList();
 }
-function renderCal() {
+function renderCal(){
   const cal = document.getElementById('calendar');
   const [yy, mm] = (document.getElementById('monthPicker').value || fmtYM(new Date())).split('-').map(Number);
-  const first = new Date(yy, mm - 1, 1);
-  const start = new Date(first);
-  start.setDate(1 - first.getDay());
+  const first = new Date(yy, mm-1, 1);
+  const start = new Date(first); start.setDate(1 - first.getDay());
   const end = new Date(yy, mm, 0);
   const weeks = Math.ceil((first.getDay() + end.getDate()) / 7);
+
   cal.innerHTML = '';
-  for (let i = 0; i < weeks * 7; i++) {
+  for (let i=0;i<weeks*7;i++){
     const d = new Date(start);
-    d.setDate(start.getDate() + i);
+    d.setDate(start.getDate()+i);
     const iso = fmtYMD(d);
-    const inMonth = d.getMonth() === (mm - 1);
+    const inMonth = d.getMonth() === (mm-1);
+
     const cell = document.createElement('div');
-    cell.className = 'cell';
+    cell.className='cell';
     cell.style.opacity = inMonth ? 1 : 0.5;
     cell.innerHTML = `<div class="date">${d.getDate()}</div>`;
-    const logs = db.workLogs.filter(w => w.date === iso);
-    if (logs.length) {
-      logs.slice(0, 2).forEach(l => {
+
+    const logs = db.workLogs.filter(w=>w.date===iso);
+    if (logs.length){
+      logs.slice(0,2).forEach(l=>{
         const p = document.createElement('div');
-        p.className = 'pill';
-        const base = (db.workers.find(x => x.id === l.worker_id) || {}).daily || 0;
-        const s4 = siteName(l.site_id).slice(0, 4);
+        p.className='pill';
+        const base = (workerById(l.worker_id)||{}).daily||0;
+        const s4 = siteName(l.site_id).slice(0,4);
         p.textContent = `${s4}·${workerName(l.worker_id)}·${l.md}·${KR(base)}원`;
         cell.appendChild(p);
       });
-      if (logs.length > 2) {
-        const more = document.createElement('div');
-        more.className = 'pill';
-        more.textContent = `+${logs.length - 2}건`;
+      if (logs.length>2){
+        const more=document.createElement('div');
+        more.className='pill';
+        more.textContent = `+${logs.length-2}건`;
         cell.appendChild(more);
       }
     } else {
-      const none = document.createElement('div');
-      none.className = 'mini';
-      none.textContent = '기록 없음';
+      const none=document.createElement('div');
+      none.className='mini';
+      none.textContent='기록 없음';
       cell.appendChild(none);
     }
     cell.onclick = () => openLogModal(iso);
     cal.appendChild(cell);
   }
 }
-function renderHomeList() {
+function renderHomeList(){
   const tbody = document.querySelector('#homeListTable tbody');
-  tbody.innerHTML = '';
+  tbody.innerHTML='';
+
   const ym = document.getElementById('monthPicker').value || fmtYM(new Date());
-  const [Y, M] = ym.split('-').map(Number);
   const wId = document.getElementById('homeWorker').value;
-  const inMonth = d => {
-    const dt = new Date(d);
-    return dt.getFullYear() === Y && dt.getMonth() + 1 === M
-  };
-  const rows = db.workLogs.filter(r => inMonth(r.date) && (wId ? r.worker_id === wId : true)).sort((a, b) => a.date.localeCompare(b.date));
-  let totalSalary = 0, totalTax = 0, totalNet = 0, totalHours = 0;
-  rows.forEach(r => {
-    const w = db.workers.find(x => x.id === r.worker_id) || {};
-    const salary = (r.md || 0) * (w.daily || 0);
-    const tax = Math.round(salary * 0.033);
+  const [Y,M] = ym.split('-').map(Number);
+  const inMonth = d => { const dt=new Date(d); return dt.getFullYear()===Y && dt.getMonth()+1===M; };
+
+  const logs = db.workLogs
+    .filter(r=> inMonth(r.date) && (wId ? r.worker_id===wId : true))
+    .sort((a,b)=>a.date.localeCompare(b.date));
+
+  let totalSalary=0,totalTax=0,totalNet=0,totalHours=0;
+  logs.forEach(r=>{
+    const w = workerById(r.worker_id)||{};
+    const salary = (r.md||0)*(w.daily||0);
+    const tax = Math.round(salary*0.033);
     const net = salary - tax;
-    totalSalary += salary;
-    totalTax += tax;
-    totalNet += net;
-    totalHours += (r.md || 0);
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${w.name || '(미등록)'}</td><td>${r.date.slice(5)}</td><td>${siteName(r.site_id)}</td><td>${r.md}</td><td>${KR(salary)}원</td><td class="text-red">-${KR(tax)}원</td><td>${KR(net)}원</td>`;
+    totalSalary+=salary; totalTax+=tax; totalNet+=net; totalHours+=(r.md||0);
+
+    const tr=document.createElement('tr');
+    tr.innerHTML = `
+      <td>${w.name||'(미등록)'}</td>
+      <td>${r.date}</td>
+      <td>${siteName(r.site_id)}</td>
+      <td>${r.md}</td>
+      <td>${KR(salary)}원</td>
+      <td class="text-red">-${KR(tax)}원</td>
+      <td>${KR(net)}원</td>
+    `;
     tbody.appendChild(tr);
   });
+
   document.getElementById('totalSalary').textContent = `${KR(totalSalary)}원`;
   document.getElementById('totalTax').textContent = `-${KR(totalTax)}원`;
   document.getElementById('totalNet').textContent = `${KR(totalNet)}원`;
   document.getElementById('totalHours').textContent = totalHours;
 
   document.getElementById('btnExportHome').onclick = () => {
-    const aoa = [["작업자", "일자(월-일)", "현장", "공수", "총급여", "세금(3.3%)", "실수령액"]];
-    rows.forEach(r => {
-      const w = db.workers.find(x => x.id === r.worker_id) || {};
-      const salary = (r.md || 0) * (w.daily || 0);
-      const tax = Math.round(salary * 0.033);
-      const net = salary - tax;
-      aoa.push([w.name || '', r.date.slice(5), siteName(r.site_id), r.md, salary, -tax, net]);
+    const aoa = [["작업자","일자","현장","공수","총급여","세금(3.3%)","실수령액"]];
+    logs.forEach(r=>{
+      const w = workerById(r.worker_id)||{};
+      const salary=(r.md||0)*(w.daily||0);
+      const tax=Math.round(salary*0.033);
+      const net=salary-tax;
+      aoa.push([w.name||'', r.date, siteName(r.site_id), r.md, salary, -tax, net]);
     });
-    const wb = XLSX.utils.book_new();
+    const wb=XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), `월간_${ym}`);
-    XLSX.writeFile(wb, `월간_작업리스트_${ym}${wId ? ('_' + workerName(wId)) : ""}.xlsx`);
+    XLSX.writeFile(wb, `월간_작업리스트_${ym}${wId?('_'+workerName(wId)):""}.xlsx`);
   };
 }
 
-/* 작업 모달 */
+/* ===== 작업 모달 ===== */
 let modalDate = '';
-function openLogModal(date) {
+function openLogModal(date){
   modalDate = date;
   const d = new Date(date);
-  document.getElementById('modalDate').textContent = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} 작업기록`;
+  document.getElementById('modalDate').textContent = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} 작업기록`;
+
   const wrap = document.getElementById('modalRows');
-  wrap.innerHTML = '';
-  const rows = db.workLogs.filter(w => w.date === date);
-  rows.forEach(r => wrap.appendChild(makeLog2Row(r)));
-  const dlg = document.getElementById('logModal');
-  document.getElementById('btnCloseModal').onclick = () => dlg.close();
+  wrap.innerHTML='';
+  db.workLogs.filter(w=>w.date===date).forEach(r=> wrap.appendChild(makeLog2Row(r)) );
+
+  document.getElementById('btnCloseModal').onclick = () => document.getElementById('logModal').close();
   document.getElementById('btnSaveLogs').onclick = saveModalRows;
   document.getElementById('btnAddRow').onclick = () => wrap.appendChild(makeLog2Row(null));
-  dlg.showModal();
+  document.getElementById('logModal').showModal();
 }
-function makeLog2Row(r) {
-  const div = document.createElement('div');
-  div.className = 'log-2row';
+function makeLog2Row(r){
+  const div=document.createElement('div');
+  div.className='log-2row';
   div.dataset.id = r?.id || 'new';
-  const siteOps = db.sites.map(s => `<option value="${s.id}" ${r?.site_id === s.id ? 'selected' : ''}>${s.name}</option>`).join('');
-  const workerOps = db.workers.map(w => `<option value="${w.id}" ${r?.worker_id === w.id ? 'selected' : ''}>${w.name}</option>`).join('');
+
+  const siteOps = db.sites.map(s=>`<option value="${s.id}" ${r?.site_id===s.id?'selected':''}>${s.name}</option>`).join('');
+  const workerOps = db.workers.map(w=>`<option value="${w.id}" ${r?.worker_id===w.id?'selected':''}>${w.name}</option>`).join('');
+
   div.innerHTML = `
     <select class="site">${siteOps}</select>
     <select class="worker">${workerOps}</select>
@@ -961,38 +808,32 @@ function makeLog2Row(r) {
     <div class="row2">
       <input class="note" placeholder="메모" value="${r?.note || ''}">
       <button class="btn warn del">삭제</button>
-    </div>`;
-  div.querySelector('.del').onclick = () => {
-    const id = div.dataset.id;
-    if (id !== 'new') {
-      db.workLogs = db.workLogs.filter(x => x.id !== id);
-      save();
-    }
-    div.remove();
-  };
+    </div>
+  `;
+  div.querySelector('.del').onclick = () => { div.remove(); };
   return div;
 }
-function saveModalRows() {
+async function saveModalRows(){
   const wrap = document.getElementById('modalRows');
   const rows = [...wrap.querySelectorAll('.log-2row')];
-  const keep = [];
-  rows.forEach(row => {
-    const id = row.dataset.id;
-    const siteId = row.querySelector('.site').value;
-    const workerId = row.querySelector('.worker').value;
-    const md = parseFloat(row.querySelector('.md').value || 0);
-    const note = row.querySelector('.note').value;
-    if (md > 0) keep.push({ id: id === 'new' ? uid() : id, date: modalDate, site_id: siteId, worker_id: workerId, md, note });
-  });
-  db.workLogs = db.workLogs.filter(w => w.date !== modalDate).concat(keep);
-  save();
+  const keep = rows.map(row=>({
+    id: row.dataset.id !== 'new' ? row.dataset.id : undefined,
+    date: modalDate,
+    site_id: row.querySelector('.site').value,
+    worker_id: row.querySelector('.worker').value,
+    md: parseFloat(row.querySelector('.md').value||0),
+    note: row.querySelector('.note').value
+  })).filter(r=> r.md>0 && r.site_id && r.worker_id);
+
+  await supabase.from('work_logs').delete().eq('date', modalDate);
+  if (keep.length) await supabase.from('work_logs').insert(keep.map(({id,...rest})=>rest));
+  await loadRecent();
   document.getElementById('logModal').close();
-  renderCal();
-  renderHomeList();
+  renderCal(); renderHomeList();
 }
 
 /* ===== 경비관리 ===== */
-function initExpense() {
+function initExpense(){
   fillSiteSelect(document.getElementById('exSite'));
   fillWorkerSelect(document.getElementById('exWorker'));
   document.getElementById('exDate').value = fmtYMD(new Date());
@@ -1001,7 +842,7 @@ function initExpense() {
   document.getElementById('linkMonth').value = fmtYM(new Date());
   drawLinkedWork();
 
-  document.querySelectorAll('.accordion-header').forEach(h => h.addEventListener('click', () => h.parentElement.classList.toggle('active')));
+  document.querySelectorAll('.accordion-header').forEach(h=> h.addEventListener('click', ()=> h.parentElement.classList.toggle('active')));
   document.getElementById('linkMonth').onchange = drawLinkedWork;
   document.getElementById('linkWorker').onchange = drawLinkedWork;
 
@@ -1009,64 +850,99 @@ function initExpense() {
   document.getElementById('excelFile').onchange = async e => {
     const f = e.target.files?.[0];
     if (!f) return;
-    try {
+    try{
       const data = new Uint8Array(await f.arrayBuffer());
-      const wb = XLSX.read(data, { type: 'array' });
+      const wb = XLSX.read(data, { type:'array' });
       const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
-      const body = rows.slice(1).find(r => r && r.length > 0) || [];
+      const rows = XLSX.utils.sheet_to_json(ws, { header:1 });
+      const body = rows.slice(1).find(r => r && r.length>0) || [];
       const [cat, amount, vendor, address] = body;
       if (cat) document.getElementById('exCategory').value = String(cat);
-      if (amount != null) document.getElementById('exAmount').value = parseInt(amount) || 0;
+      if (amount!=null) document.getElementById('exAmount').value = parseInt(amount)||0;
       if (vendor) document.getElementById('exVendor').value = String(vendor);
       if (address) document.getElementById('exAddress').value = String(address);
       alert('엑셀 내용이 입력폼에 반영되었습니다.');
-    } catch (err) {
+    } catch(err){
       alert('엑셀 파싱 실패: 파일 내용을 확인하세요.');
-    } finally {
-      e.target.value = '';
-    }
+    } finally { e.target.value=''; }
   };
 
-  document.getElementById('btnSaveExpense').onclick = async () => {
-    const ex = {
-      id: uid(),
-      date: document.getElementById('exDate').value,
-      site_id: document.getElementById('exSite').value,
-      worker_name: (db.workers.find(w => w.id === document.getElementById('exWorker').value) || {}).name || '',
-      category: document.getElementById('exCategory').value,
-      amount: parseInt(document.getElementById('exAmount').value || 0),
-      vendor: document.getElementById('exVendor').value.trim(),
-      address: document.getElementById('exAddress').value.trim(),
-      memo: document.getElementById('exMemo').value.trim()
-    };
-    const { error } = await supabase.from('expenses').insert(ex);
-    if (error) {
-      console.error('지출 저장 오류:', error);
-      alert('지출 저장에 실패했습니다.');
-    } else {
-      alert('지출 저장 완료');
-      redrawExpense();
-    }
-  };
+  document.getElementById('btnSaveExpense').onclick = onSaveExpense;
 
-  fillSiteSelect(document.getElementById('ledgerSite'));
+  // 필터 초기화 및 이벤트
+  fillSiteSelect(document.getElementById('ledgerSite')); // 전체 포함
   document.getElementById('ledgerMonth').value = fmtYM(new Date());
-  ['ledgerSite', 'ledgerMonth'].forEach(id => document.getElementById(id).onchange = redrawExpense);
+  ['ledgerSite','ledgerMonth'].forEach(id => document.getElementById(id).onchange = redrawExpense);
   redrawExpense();
 }
-function drawLinkedWork() {
+
+function mapUIToExpense(){
+  const workerId = document.getElementById('exWorker').value;
+  const worker = workerById(workerId) || {};
+  return {
+    // id는 서버 스키마 NOT NULL 대비: 정수 타임스탬프 사용
+    id: Date.now(),
+    date: document.getElementById('exDate').value,
+    site_id: document.getElementById('exSite').value,
+    worker_name: worker.name || '',
+    category: document.getElementById('exCategory').value,
+    amount: parseInt(document.getElementById('exAmount').value || 0, 10),
+    vendor: document.getElementById('exVendor').value.trim(),
+    address: document.getElementById('exAddress').value.trim(),
+    memo: document.getElementById('exMemo').value.trim()
+  };
+}
+function validateExpense(ex){
+  if (!ex.date) return { ok:false, message:'사용일이 비었습니다.' };
+  if (!ex.site_id) return { ok:false, message:'현장을 선택하세요.' };
+  if (!ex.category) return { ok:false, message:'항목을 선택하세요.' };
+  if (!ex.worker_name) return { ok:false, message:'작업자를 선택하세요.' };
+  if (!Number.isInteger(ex.amount) || ex.amount <= 0) return { ok:false, message:'금액을 1원 이상 정수로 입력하세요.' };
+  return { ok:true };
+}
+function resetExpenseForm(){
+  document.getElementById('exDate').value = fmtYMD(new Date());
+  document.getElementById('exAmount').value = '';
+  document.getElementById('exVendor').value = '';
+  document.getElementById('exAddress').value = '';
+  document.getElementById('exMemo').value = '';
+}
+async function onSaveExpense(){
+  const ex = mapUIToExpense();
+  const v = validateExpense(ex);
+  if (!v.ok){ alert('지출 저장 오류: '+v.message); return; }
+
+  const btn = document.getElementById('btnSaveExpense');
+  btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> 저장 중...';
+  try{
+    // id 포함 insert (NOT NULL 대응)
+    const { error } = await supabase.from('expenses').insert([ex]);
+    if (error) throw error;
+    resetExpenseForm();
+    await loadRecent();
+    redrawExpense();
+    alert('지출 저장 완료');
+  } catch(err){
+    console.error('지출 저장 오류:', err);
+    alert('지출 저장 오류: ' + (err?.message || '알 수 없는 오류'));
+  } finally {
+    btn.disabled=false; btn.innerHTML='지출 저장';
+  }
+}
+function drawLinkedWork(){
   const month = document.getElementById('linkMonth').value;
   const workerId = document.getElementById('linkWorker').value;
   const tbody = document.querySelector('#logLinkTable tbody');
-  tbody.innerHTML = '';
-  const logs = month ? db.workLogs.filter(r => r.date.startsWith(month)) : db.workLogs;
-  const filtered = workerId ? logs.filter(r => r.worker_id === workerId) : logs;
-  filtered.sort((a, b) => a.date.localeCompare(b.date)).forEach(r => {
+  tbody.innerHTML='';
+
+  const logs = month ? db.workLogs.filter(r=>r.date.startsWith(month)) : db.workLogs;
+  const filtered = workerId ? logs.filter(r=>r.worker_id===workerId) : logs;
+
+  filtered.sort((a,b)=>a.date.localeCompare(b.date)).forEach(r=>{
     const tr = document.createElement('tr');
     tr.innerHTML = `<td>${r.date}</td><td>${siteName(r.site_id)}</td><td>${workerName(r.worker_id)}</td><td>${r.md}</td>`;
-    tr.style.cursor = 'pointer';
-    tr.onclick = () => {
+    tr.style.cursor='pointer';
+    tr.onclick = ()=>{
       document.getElementById('exSite').value = r.site_id;
       document.getElementById('exDate').value = r.date;
       document.getElementById('exWorker').value = r.worker_id;
@@ -1074,508 +950,459 @@ function drawLinkedWork() {
     tbody.appendChild(tr);
   });
 }
-
-/* 금전출납부 렌더링 */
-function redrawExpense() {
-  const siteId = document.getElementById('ledgerSite').value || (db.sites[0] && db.sites[0].id);
+/* 금전출납부 렌더 */
+function redrawExpense(){
+  const siteId = document.getElementById('ledgerSite').value; // ""=전체
   const month = document.getElementById('ledgerMonth').value;
-  const [Y, M] = month ? month.split('-').map(Number) : [1970, 1];
-  const inMonth = d => {
-    const dt = new Date(d);
-    return dt.getFullYear() === Y && dt.getMonth() + 1 === M
-  };
-  const site = db.sites.find(s => s.id === siteId) || { budget: 0, name: '' };
-  const budget = site.budget || 0;
+  
+  // 홈 탭에서 선택된 현장 ID 가져오기
+  const homeSiteId = document.getElementById('homeSite')?.value || null;
+  
+  const { rows: laborRows, totalHours, totalGross, totalTax, totalNet } = computeLaborRows(siteId, month, homeSiteId);
+  renderLaborTable(document.getElementById('laborTable'), laborRows, totalHours, totalGross, totalTax, totalNet, 'labor');
 
-  // 인건비(총급여/실수령액) 목록 & 합계
-  const laborLogs = (month ? db.workLogs.filter(r => r.site_id === siteId && inMonth(r.date)) : db.workLogs.filter(r => r.site_id === siteId))
-    .sort((a, b) => a.date.localeCompare(b.date));
-  let laborTotalGross = 0, laborTotalNet = 0;
-  const laborBody = document.querySelector('#laborTable tbody');
-  laborBody.innerHTML = '';
-  laborLogs.forEach(log => {
-    const w = db.workers.find(x => x.id === log.worker_id) || {};
-    const salary = log.md * (w.daily || 0);
-    const tax = Math.round(salary * 0.033);
-    const net = salary - tax;
-    laborTotalGross += salary;
-    laborTotalNet += net;
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${log.date}</td>
-      <td>${w.name || '(미등록)'}</td>
-      <td>${KR(w.daily || 0)}원</td>
-      <td>${log.md}</td>
-      <td>${KR(salary)}원</td>
-      <td class="text-red">-${KR(tax)}원</td>
-      <td>${KR(net)}원</td>`;
-    laborBody.appendChild(tr);
-  });
-  document.getElementById('laborTotalGross').textContent = `${KR(laborTotalGross)}원`;
-  document.getElementById('laborTotalNet').textContent = `${KR(laborTotalNet)}원`;
+  const { rows: expenseRows, total: expenseTotal } = computeExpenseRows(siteId, month, homeSiteId);
+  renderExpenseTable(document.getElementById('expenseTable'), expenseRows, expenseTotal, true);
 
-  // 경비(현장 매칭)
-  const expenses = (month ? db.expenses.filter(e => e.site_id === siteId && inMonth(e.date)) : db.expenses.filter(e => e.site_id === siteId))
-    .sort((a, b) => a.date.localeCompare(b.date));
-  let expenseTotal = 0;
-  const expenseBody = document.querySelector('#expenseTable tbody');
-  expenseBody.innerHTML = '';
-  expenses.forEach(exp => {
-    expenseTotal += exp.amount || 0;
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${exp.date}</td><td>${exp.worker_name}</td><td>${exp.category}</td><td>${KR(exp.amount)}원</td>
-      <td>${exp.vendor}</td><td>${exp.address}</td><td>${exp.memo}</td>
-      <td><button class="btn" onclick="attachReceipt('${exp.id}')"><i class="fas fa-paperclip"></i></button></td>
-      <td><button class="btn warn" onclick="removeExpense('${exp.id}')">삭제</button></td>`;
-    expenseBody.appendChild(tr);
-  });
-  document.getElementById('expenseTotalAmount').textContent = `${KR(expenseTotal)}원`;
+  // 예산 합산(전체 선택 시 모든 현장 합산)
+  let totalBudget = 0;
+  if (siteId){
+    const s = db.sites.find(x=>x.id===siteId); totalBudget = s? (s.budget||0) : 0;
+  } else {
+    totalBudget = db.sites.reduce((sum,s)=> sum + (s.budget||0), 0);
+  }
 
-  // 순수익(총예산 - 인건비(총급여) - 경비)
-  document.getElementById('calcBudget').textContent = `${KR(budget)}원`;
-  document.getElementById('calcLabor').textContent = `${KR(laborTotalGross)}원`;
-  document.getElementById('calcExpense').textContent = `${KR(expenseTotal)}원`;
-  const profit = budget - laborTotalGross - expenseTotal;
-  const profitDisplay = document.getElementById('calcProfit');
-  profitDisplay.textContent = `${KR(profit)}원`;
-  profitDisplay.className = `number ${profit >= 0 ? 'text-blue' : 'text-red'}`;
+  const profit = totalBudget - totalGross - expenseTotal;
+  const setWon = (id,val) => { const el=document.getElementById(id); if(el) el.textContent = KR(val)+'원'; };
+  setWon('calcBudget', totalBudget);
+  setWon('calcLabor', totalGross);
+  setWon('calcExpense', expenseTotal);
+  const pEl = document.getElementById('calcProfit');
+  if (pEl){ pEl.textContent = KR(profit)+'원'; pEl.className = `number ${profit>=0? 'text-blue':'text-red'}`; }
 
-  // 엑셀 내보내기(모바일 폭: block)
-  document.getElementById('btnExportLedger').onclick = () => {
-    const aoa = [
-      ["현장", site.name],
-      ["총 예산", budget],
-      ["조회일(년-월)", month || '전체'],
-      [],
-      ["[인건비 현황]"],
-      ["일자", "작업자", "기본급", "공수", "총급여", "세금(3.3%)", "실수령액"]
-    ];
-    laborLogs.forEach(log => {
-      const w = db.workers.find(x => x.id === log.worker_id) || {};
-      const salary = log.md * (w.daily || 0);
-      const tax = Math.round(salary * 0.033);
-      const net = salary - tax;
-      aoa.push([log.date, w.name || '', w.daily || 0, log.md, salary, -tax, net]);
-    });
-    aoa.push(["인건비 합계(총급여)", laborTotalGross], ["인건비 합계(실수령)", laborTotalNet]);
-    aoa.push([]);
-    aoa.push(["[경비 현황]"]);
-    aoa.push(["사용일", "작업자", "항목", "금액", "사용처", "주소", "메모"]);
-    expenses.forEach(exp => {
-      aoa.push([exp.date, exp.worker_name, exp.category, exp.amount, exp.vendor, exp.address, exp.memo]);
-    });
-    aoa.push(["경비 합계", expenseTotal]);
-    aoa.push([]);
-    aoa.push(["순수익(총예산-인건비(총급여)-경비)", budget - laborTotalGross - expenseTotal]);
-
+  // 엑셀 내보내기 (요약)
+  document.getElementById('btnExportLedger').onclick = ()=>{
+    const wsData = [["항목","값"],
+      ["예산", document.getElementById('calcBudget').textContent],
+      ["인건비", document.getElementById('calcLabor').textContent],
+      ["경비", document.getElementById('calcExpense').textContent],
+      ["순이익", document.getElementById('calcProfit').textContent]];
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), '금전출납부');
-    XLSX.writeFile(wb, `금전출납부_${site.name}_${month || '전체'}.xlsx`);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(wsData), '금전출납 요약');
+    XLSX.writeFile(wb, `금전출납_${month || fmtYM(new Date())}.xlsx`);
   };
 }
-window.attachReceipt = async function(expenseId) {
-  const expense = db.expenses.find(e => e.id === expenseId);
-  if (!expense) return alert('내역 없음');
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/*';
-  input.onchange = async e => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    const reader = new FileReader();
-    reader.onload = async ev => {
-      const { error } = await supabase.from('receipts').insert({
-        expense_id: expenseId,
-        file_name: f.name,
-        data: ev.target.result
-      });
-      if (error) {
-        console.error('영수증 첨부 오류:', error);
-        alert('영수증 첨부에 실패했습니다.');
-      } else {
-        alert('영수증 첨부완료');
-        redrawExpense();
-      }
-    };
-    reader.readAsDataURL(f);
-  };
-  input.click();
-};
-window.removeExpense = async function(expenseId) {
-  if (confirm('해당 지출 항목을 삭제하시겠습니까?')) {
-    // 먼저 관련된 영수증 삭제
-    await supabase.from('receipts').delete().eq('expense_id', expenseId);
-    // 경비 삭제
+
+/* 경비 삭제 */
+window.deleteExpense = async function(expenseId){
+  if (!confirm('해당 지출 항목을 삭제하시겠습니까?')) return;
+  try {
     const { error } = await supabase.from('expenses').delete().eq('id', expenseId);
-    if (error) {
-      console.error('지출 삭제 오류:', error);
-      alert('지출 삭제에 실패했습니다.');
-    } else {
-      alert('지출 삭제완료');
-      redrawExpense();
-    }
+    if (error) throw error;
+    await loadRecent();
+    redrawExpense();
+    alert('지출 항목이 삭제되었습니다.');
+  } catch (err) {
+    console.error('지출 삭제 오류:', err);
+    alert('지출 삭제 실패: ' + (err?.message || '알 수 없는 오류'));
   }
 };
 
 /* ===== 수익분석 ===== */
-function initProfit() {
-  fillSiteSelect(document.getElementById('profitSite'));
+function initProfit(){
+  fillSiteSelect(document.getElementById('profitSite')); // 전체 포함
   document.getElementById('profitMonth').value = fmtYM(new Date());
-  document.getElementById('profitSite').onchange = renderProfit;
-  document.getElementById('profitMonth').onchange = renderProfit;
+  ['profitSite','profitMonth'].forEach(id => document.getElementById(id).onchange = renderProfit);
   renderProfit();
 }
-function renderProfit() {
-  const siteSel = document.getElementById('profitSite');
-  const siteId = siteSel.value;
+function renderProfit(){
+  const siteId = document.getElementById('profitSite').value;
   const month = document.getElementById('profitMonth').value;
-  const [Y, M] = month ? month.split('-').map(Number) : [1970, 1];
-  const inMonth = d => {
-    const dt = new Date(d);
-    return dt.getFullYear() === Y && dt.getMonth() + 1 === M
-  };
-
+  
+  // 홈 탭에서 선택된 현장 ID 가져오기
+  const homeSiteId = document.getElementById('homeSite')?.value || null;
+  
   let totalBudget = 0;
-  let totalLabor = 0;
-  let totalExpense = 0;
-
-  // 수정: 선택된 현장이 있으면 해당 현장만, 없으면 모든 현장의 예산 누적
-  if (siteId) {
-    const site = db.sites.find(s => s.id === siteId);
-    if (site) {
-      totalBudget = site.budget || 0;
-      totalLabor = db.workLogs
-        .filter(r => r.site_id === siteId && (!month || inMonth(r.date)))
-        .reduce((sum, r) => {
-          const w = db.workers.find(x => x.id === r.worker_id);
-          return sum + (r.md || 0) * (w ? w.daily : 0);
-        }, 0);
-      totalExpense = db.expenses
-        .filter(e => e.site_id === siteId && (!month || inMonth(e.date)))
-        .reduce((sum, e) => sum + (e.amount || 0), 0);
-    }
+  if (siteId){
+    const s = db.sites.find(x=>x.id===siteId); totalBudget = s? (s.budget||0): 0;
   } else {
-    // 모든 현장의 예산 누적
-    db.sites.forEach(s => {
-      totalBudget += s.budget || 0;
-      totalLabor += db.workLogs
-        .filter(r => r.site_id === s.id && (!month || inMonth(r.date)))
-        .reduce((sum, r) => {
-          const w = db.workers.find(x => x.id === r.worker_id);
-          return sum + (r.md || 0) * (w ? w.daily : 0);
-        }, 0);
-      totalExpense += db.expenses
-        .filter(e => e.site_id === s.id && (!month || inMonth(e.date)))
-        .reduce((sum, e) => sum + (e.amount || 0), 0);
-    });
+    totalBudget = db.sites.reduce((sum,s)=> sum + (s.budget||0), 0);
   }
 
-  const net = totalBudget - totalLabor - totalExpense;
-  document.getElementById('profitCardTotalBudget').textContent = `${KR(totalBudget)}원`;
-  document.getElementById('profitCardTotalLabor').textContent = `${KR(totalLabor)}원`;
-  document.getElementById('profitCardTotalExpense').textContent = `${KR(totalExpense)}원`;
-  const netEl = document.getElementById('profitCardNetProfit');
-  netEl.textContent = `${KR(net)}원`;
-  netEl.className = `number ${net >= 0 ? 'text-blue' : 'text-red'}`;
+  // Step 1: Compute labor and expense totals for the entire period
+  const { totalGross: laborTotalGross } = computeLaborRows(siteId, month, homeSiteId);
+  const { total: expenseTotal } = computeExpenseRows(siteId, month, homeSiteId);
 
-  // 인건비 요약(월별 누적)
-  const payBody = document.querySelector('#payWorkerTable tbody');
-  payBody.innerHTML = '';
-  let profitTotalSalary = 0, profitTotalNet = 0;
-  const period = month || '전체'; // 년-월 표시용
+  // Step 2: Build the siteFinanceTable and compute the total profit
+  const tbody = document.querySelector('#siteFinanceTable tbody');
+  tbody.innerHTML='';
+  let financeTotalProfit = 0;
 
-  if (siteId) {
-    const site = db.sites.find(s => s.id === siteId);
-    if (site) {
-      const logs = month ? db.workLogs.filter(r => r.site_id === siteId && inMonth(r.date)) : db.workLogs.filter(r => r.site_id === siteId);
-      const byWorker = {};
-      logs.forEach(r => {
-        const w = db.workers.find(x => x.id === r.worker_id) || {};
-        const cur = byWorker[r.worker_id] || (byWorker[r.worker_id] = { md: 0, daily: w.daily || 0, name: w.name || '(미등록)' });
-        cur.md += (r.md || 0);
-      });
-      Object.values(byWorker).forEach(v => {
-        const salary = v.md * v.daily;
-        const tax = Math.round(salary * 0.033);
-        const netSalary = salary - tax;
-        profitTotalSalary += salary;
-        profitTotalNet += netSalary;
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${period}</td><td>${site.name}</td><td>${v.name}</td><td>${v.md}</td><td>${KR(salary)}원</td><td>${KR(netSalary)}원</td>`;
-        payBody.appendChild(tr);
-      });
+  const sites = siteId ? db.sites.filter(s=>s.id===siteId) : db.sites;
+  sites.forEach(s=>{
+    const logsAll = db.workLogs.filter(l=>l.site_id===s.id);
+    const expsAll = db.expenses.filter(e=>e.site_id===s.id);
+    const months = new Set();
+    if (month){ months.add(month); }
+    else {
+      logsAll.forEach(l=> months.add(l.date.substring(0,7)));
+      expsAll.forEach(e=> months.add(e.date.substring(0,7)));
     }
-  } else {
-    db.sites.forEach(s => {
-      const logs = month ? db.workLogs.filter(r => r.site_id === s.id && inMonth(r.date)) : db.workLogs.filter(r => r.site_id === s.id);
-      const byWorker = {};
-      logs.forEach(r => {
-        const w = db.workers.find(x => x.id === r.worker_id) || {};
-        const cur = byWorker[r.worker_id] || (byWorker[r.worker_id] = { md: 0, daily: w.daily || 0, name: w.name || '(미등록)' });
-        cur.md += (r.md || 0);
-      });
-      Object.values(byWorker).forEach(v => {
-        const salary = v.md * v.daily;
-        const tax = Math.round(salary * 0.033);
-        const netSalary = salary - tax;
-        profitTotalSalary += salary;
-        profitTotalNet += netSalary;
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${period}</td><td>${s.name}</td><td>${v.name}</td><td>${v.md}</td><td>${KR(salary)}원</td><td>${KR(netSalary)}원</td>`;
-        payBody.appendChild(tr);
-      });
-    });
-  }
-  document.getElementById('profitTotalSalary').textContent = `${KR(profitTotalSalary)}원`;
-  document.getElementById('profitTotalNet').textContent = `${KR(profitTotalNet)}원`;
-
-  // 금전출납(월별)
-  const siteBody = document.querySelector('#siteFinanceTable tbody');
-  siteBody.innerHTML = '';
-  let financeTotalLabor = 0, financeTotalExpense = 0, financeTotalProfit = 0;
-  const byMonth = {};
-
-  if (siteId) {
-    const site = db.sites.find(s => s.id === siteId);
-    if (site) {
-      const logs = month ? db.workLogs.filter(r => r.site_id === siteId && inMonth(r.date)) : db.workLogs.filter(r => r.site_id === siteId);
-      const expenses = month ? db.expenses.filter(e => e.site_id === siteId && inMonth(e.date)) : db.expenses.filter(e => e.site_id === siteId);
-      
-      // 해당 현장의 모든 작업일자를 가져와 첫 번째 달을 찾음
-      const allDates = logs.map(log => log.date.substring(0, 7));
-      const firstMonth = allDates.length > 0 ? allDates.sort()[0] : null;
-      
-      logs.forEach(log => {
-        const m = log.date.substring(0, 7);
-        if (!byMonth[m]) byMonth[m] = {};
-        if (!byMonth[m][siteId]) {
-          // 첫 번째 달에는 총 예산을 설정하고, 나머지 달에는 0으로 설정
-          byMonth[m][siteId] = { 
-            budget: m === firstMonth ? site.budget : 0, 
-            labor: 0, 
-            expense: 0 
-          };
-        }
-        const w = db.workers.find(x => x.id === log.worker_id);
-        byMonth[m][siteId].labor += (log.md || 0) * (w ? w.daily : 0);
-      });
-      expenses.forEach(exp => {
-        const m = exp.date.substring(0, 7);
-        if (!byMonth[m]) byMonth[m] = {};
-        if (!byMonth[m][siteId]) {
-          // 첫 번째 달에는 총 예산을 설정하고, 나머지 달에는 0으로 설정
-          byMonth[m][siteId] = { 
-            budget: m === firstMonth ? site.budget : 0, 
-            labor: 0, 
-            expense: 0 
-          };
-        }
-        byMonth[m][siteId].expense += exp.amount || 0;
-      });
+    
+    let firstMonthInPeriod;
+    if (month) {
+      firstMonthInPeriod = month;
+    } else {
+      const allMonths = [...new Set([...logsAll.map(l => l.date.substring(0,7)), ...expsAll.map(e => e.date.substring(0,7))])].sort();
+      firstMonthInPeriod = allMonths.length ? allMonths[0] : null;
     }
-  } else {
-    db.sites.forEach(s => {
-      const logs = month ? db.workLogs.filter(r => r.site_id === s.id && inMonth(r.date)) : db.workLogs.filter(r => r.site_id === s.id);
-      const expenses = month ? db.expenses.filter(e => e.site_id === s.id && inMonth(e.date)) : db.expenses.filter(e => e.site_id === s.id);
-      
-      // 해당 현장의 모든 작업일자를 가져와 첫 번째 달을 찾음
-      const allDates = logs.map(log => log.date.substring(0, 7));
-      const firstMonth = allDates.length > 0 ? allDates.sort()[0] : null;
-      
-      logs.forEach(log => {
-        const m = log.date.substring(0, 7);
-        if (!byMonth[m]) byMonth[m] = {};
-        if (!byMonth[m][s.id]) {
-          // 첫 번째 달에는 총 예산을 설정하고, 나머지 달에는 0으로 설정
-          byMonth[m][s.id] = { 
-            budget: m === firstMonth ? s.budget : 0, 
-            labor: 0, 
-            expense: 0 
-          };
-        }
-        const w = db.workers.find(x => x.id === log.worker_id);
-        byMonth[m][s.id].labor += (log.md || 0) * (w ? w.daily : 0);
-      });
-      expenses.forEach(exp => {
-        const m = exp.date.substring(0, 7);
-        if (!byMonth[m]) byMonth[m] = {};
-        if (!byMonth[m][s.id]) {
-          // 첫 번째 달에는 총 예산을 설정하고, 나머지 달에는 0으로 설정
-          byMonth[m][s.id] = { 
-            budget: m === firstMonth ? s.budget : 0, 
-            labor: 0, 
-            expense: 0 
-          };
-        }
-        byMonth[m][s.id].expense += exp.amount || 0;
-      });
-    });
-  }
 
-  Object.keys(byMonth).sort().forEach(m => {
-    Object.keys(byMonth[m]).forEach(sid => {
-      const item = byMonth[m][sid];
-      const profit = item.budget - item.labor - item.expense;
-      financeTotalLabor += item.labor;
-      financeTotalExpense += item.expense;
-      financeTotalProfit += profit;
+    [...months].sort().forEach(m=>{
+      const logs = logsAll.filter(l=> l.date.startsWith(m));
+      const exps = expsAll.filter(e=> e.date.startsWith(m));
+      const laborGross = logs.reduce((sum,l)=>{ const w = workerById(l.worker_id) || {}; return sum + (l.md||0)*(w.daily||0); },0);
+      const expenseSum = exps.reduce((sum,e)=> sum+(e.amount||0), 0);
+      
+      const budget = (m === firstMonthInPeriod) ? (s.budget||0) : 0;
+      const profit = budget - laborGross - expenseSum;
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${m}</td><td>${siteName(sid)}</td><td>${KR(item.budget)}원</td><td>${KR(item.labor)}원</td><td>${KR(item.expense)}원</td><td class="${profit >= 0 ? 'text-blue' : 'text-red'}">${KR(profit)}원</td>`;
-      siteBody.appendChild(tr);
+      tr.innerHTML = `<td>${m}</td><td>${s.name||''}</td><td>${KR(budget)}원</td><td>${KR(laborGross)}원</td><td>${KR(expenseSum)}원</td><td>${KR(profit)}원</td>`;
+      tbody.appendChild(tr);
+      financeTotalProfit += profit;
     });
   });
-  document.getElementById('financeTotalLabor').textContent = `${KR(financeTotalLabor)}원`;
-  document.getElementById('financeTotalExpense').textContent = `${KR(financeTotalExpense)}원`;
-  const fnet = document.getElementById('financeTotalProfit');
-  fnet.textContent = `${KR(financeTotalProfit)}원`;
-  fnet.className = `number ${financeTotalProfit >= 0 ? 'text-blue' : 'text-red'}`;
+
+  // Step 3: Set the cards
+  const put = (id, v) => { const el=document.getElementById(id); if(el) el.textContent = KR(v)+'원'; };
+  put('profitCardTotalBudget', totalBudget);
+  put('profitCardTotalLabor', laborTotalGross);
+  put('profitCardTotalExpense', expenseTotal);
+  const netEl = document.getElementById('profitCardNetProfit');
+  if (netEl){ netEl.textContent = KR(financeTotalProfit)+'원'; netEl.className = `number ${financeTotalProfit>=0?'text-blue':'text-red'}`; }
+
+  // Step 4: Build the labor table (인건비 현황)
+  const { rows: lRows, totalHours: laborTotalHours, totalTax: laborTotalTax, totalNet: laborTotalNet } = computeLaborRows(siteId, month, homeSiteId);
+  renderLaborTable(document.getElementById('payWorkerTable'), lRows, laborTotalHours, laborTotalGross, laborTotalTax, laborTotalNet, 'pay');
+
+  // Step 5: Set the footer for the labor table
+  const set = (id, val) => { const el=document.getElementById('payWorkerTable').querySelector('#'+id); if(el) el.textContent = val; };
+  set('payTotalHours',   laborTotalHours);
+  set('payTotalSalary',  KR(laborTotalGross)+'원');
+  set('payTotalTax',     '-'+KR(laborTotalTax)+'원');
+  set('payTotalNet',     KR(laborTotalNet)+'원');
+
+  // Step 6: Set the footer for the siteFinanceTable
+  const ftL = document.getElementById('financeTotalLabor');
+  const ftE = document.getElementById('financeTotalExpense');
+  const ftP = document.getElementById('financeTotalProfit');
+  if (ftL) ftL.textContent = KR(laborTotalGross)+'원';
+  if (ftE) ftE.textContent = KR(expenseTotal)+'원';
+  if (ftP) ftP.textContent = KR(financeTotalProfit)+'원';
 }
 
 /* ===== 관리자 ===== */
-function initAdmin() {
+function initAdmin(){
   const wT = document.getElementById('workerTable');
-  const drawW = () => { 
+
+  const drawW = () => {
     wT.innerHTML = `
       <thead><tr><th>작업자명</th><th>일당</th><th class="actions"></th></tr></thead>
       <tbody>
-        ${db.workers.map(w => `
+        ${db.workers.map(w=> `
           <tr>
             <td><input value='${w.name}' data-id='${w.id}' class='wName wNameRow'></td>
             <td><input type='number' value='${w.daily}' data-id='${w.id}' class='wDaily wDailyRow'></td>
             <td class="actions"><button class='btn warn' onclick="delWorker('${w.id}')">삭제</button></td>
-          </tr>`).join('')}
-      </tbody>`;
+          </tr>
+        `).join('')}
+      </tbody>
+    `;
   };
   drawW();
+
   document.getElementById('btnAddWorker').onclick = async () => {
-    const name = document.getElementById('admWorkerName').value.trim();
-    const daily = parseInt(document.getElementById('admDaily').value || 0);
+    const name=document.getElementById('admWorkerName').value.trim();
+    const daily=parseInt(document.getElementById('admDaily').value||0,10);
     if (!name || !daily) return alert('작업자명과 일당을 입력');
-    
     const { error } = await supabase.from('workers').insert({ name, daily });
-    if (error) {
-      console.error('작업자 추가 오류:', error);
-      alert('작업자 추가에 실패했습니다.');
-    } else {
-      document.getElementById('admWorkerName').value = '';
-      document.getElementById('admDaily').value = '';
-      drawW();
+    if (error){ alert('작업자 추가 실패: '+error.message); }
+    else {
+      ['admWorkerName','admDaily'].forEach(id=>document.getElementById(id).value='');
+      await loadBase(); drawW();
     }
   };
-  window.delWorker = async function(id) {
-    if (confirm('해당 작업자를 삭제하시겠습니까?')) {
-      const { error } = await supabase.from('workers').delete().eq('id', id);
-      if (error) {
-        console.error('작업자 삭제 오류:', error);
-        alert('작업자 삭제에 실패했습니다.');
-      } else {
-        drawW();
-      }
-    }
+  window.delWorker = async function(id){
+    if (!confirm('해당 작업자를 삭제하시겠습니까?')) return;
+    const { error } = await supabase.from('workers').delete().eq('id', id);
+    if (error){ alert('삭제 실패: '+error.message); }
+    else { await loadBase(); drawW(); }
   };
   wT.onchange = async e => {
-    if (e.target.classList.contains('wDailyRow')) {
-      const id = e.target.getAttribute('data-id');
-      const w = db.workers.find(x => x.id === id);
-      if (w) {
-        w.daily = parseInt(e.target.value || 0);
-        const { error } = await supabase.from('workers').update(w).eq('id', id);
-        if (error) console.error('작업자 정보 업데이트 오류:', error);
-      }
-    } else if (e.target.classList.contains('wNameRow')) {
-      const id = e.target.getAttribute('data-id');
-      const w = db.workers.find(x => x.id === id);
-      if (w) {
-        w.name = e.target.value;
-        const { error } = await supabase.from('workers').update(w).eq('id', id);
-        if (error) console.error('작업자 정보 업데이트 오류:', error);
-      }
-    }
+    const id = e.target.getAttribute('data-id');
+    const w = db.workers.find(x=>x.id===id);
+    if (!w) return;
+    if (e.target.classList.contains('wDailyRow')) w.daily = parseInt(e.target.value||0,10);
+    if (e.target.classList.contains('wNameRow')) w.name = e.target.value;
+    const { error } = await supabase.from('workers').update(w).eq('id', id);
+    if (error) console.error('작업자 정보 업데이트 오류:', error);
   };
 
   const sT = document.getElementById('siteTable');
-  const drawS = () => { 
+  const drawS = () => {
     sT.innerHTML = `
       <thead><tr><th>회사</th><th>현장명</th><th>총 예산</th><th class="actions"></th></tr></thead>
       <tbody>
-        ${db.sites.map(s => `
+        ${db.sites.map(s=> `
           <tr>
-            <td><input value='${s.company_name || ''}' data-id='${s.id}' class='sCompany sCompanyRow'></td>
+            <td><input value='${s.company_name||''}' data-id='${s.id}' class='sCompany sCompanyRow'></td>
             <td><input value='${s.name}' data-id='${s.id}' class='sName sNameRow'></td>
-            <td><input type='number' value='${s.budget}' data-id='${s.id}' class='sBudget sBudgetRow'></td>
+            <td><input type='number' value='${s.budget||0}' data-id='${s.id}' class='sBudget sBudgetRow'></td>
             <td class="actions"><button class='btn warn' onclick="delSite('${s.id}')">삭제</button></td>
-          </tr>`).join('')}
-      </tbody>`;
+          </tr>
+        `).join('')}
+      </tbody>
+    `;
   };
   drawS();
+
   document.getElementById('btnAddSite').onclick = async () => {
-    const companyName = document.getElementById('admCompanyName').value.trim();
-    const name = document.getElementById('admSiteName').value.trim();
-    const budget = parseInt(document.getElementById('admSiteBudget').value || 0);
+    const company_name=document.getElementById('admCompanyName').value.trim();
+    const name=document.getElementById('admSiteName').value.trim();
+    const budget=parseInt(document.getElementById('admSiteBudget').value||0,10);
     if (!name) return alert('현장명을 입력');
-    
-    const { error } = await supabase.from('sites').insert({ 
-      company_name: companyName, 
-      name, 
-      budget: budget || 0 
-    });
-    
-    if (error) {
-      console.error('현장 추가 오류:', error);
-      alert('현장 추가에 실패했습니다.');
-    } else {
-      ['admCompanyName', 'admSiteName', 'admSiteBudget'].forEach(id => document.getElementById(id).value = '');
-      drawS();
+    const { error } = await supabase.from('sites').insert({ company_name, name, budget: budget||0 });
+    if (error){ alert('현장 추가 실패: '+error.message); }
+    else {
+      ['admCompanyName','admSiteName','admSiteBudget'].forEach(id=>document.getElementById(id).value='');
+      await loadBase(); drawS();
     }
   };
-  window.delSite = async function(id) {
-    if (confirm('해당 현장을 삭제하시겠습니까?')) {
-      const { error } = await supabase.from('sites').delete().eq('id', id);
-      if (error) {
-        console.error('현장 삭제 오류:', error);
-        alert('현장 삭제에 실패했습니다.');
-      } else {
-        drawS();
-      }
-    }
+  window.delSite = async function(id){
+    if (!confirm('해당 현장을 삭제하시겠습니까?')) return;
+    const { error } = await supabase.from('sites').delete().eq('id', id);
+    if (error){ alert('현장 삭제 실패: '+error.message); }
+    else { await loadBase(); drawS(); }
   };
   sT.onchange = async e => {
-    const id = e.target.getAttribute('data-id');
-    const s = db.sites.find(x => x.id === id);
+    const id=e.target.getAttribute('data-id');
+    const s=db.sites.find(x=>x.id===id);
     if (!s) return;
-    
-    if (e.target.classList.contains('sCompanyRow')) s.company_name = e.target.value;
-    if (e.target.classList.contains('sNameRow')) s.name = e.target.value;
-    if (e.target.classList.contains('sBudgetRow')) s.budget = parseInt(e.target.value || 0);
-    
+    if (e.target.classList.contains('sCompanyRow')) s.company_name=e.target.value;
+    if (e.target.classList.contains('sNameRow')) s.name=e.target.value;
+    if (e.target.classList.contains('sBudgetRow')) s.budget=parseInt(e.target.value||0,10);
     const { error } = await supabase.from('sites').update(s).eq('id', id);
     if (error) console.error('현장 정보 업데이트 오류:', error);
   };
 }
 
-/* 부트스트랩 */
-async function init() {
-  // 1) 테마/네비 먼저
-  initTheme();
-  initNav();
+/* ===== 라우팅 ===== */
+function initNav(){
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const route = btn.getAttribute('data-route');
+      if (route !== appState.currentRoute) {
+        saveViewState(appState.currentRoute);
+        appState.currentRoute = route;
+        await mountView();
+        document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        history.pushState({ route, viewState: appState.viewStates[route] }, '', `#${route}`);
+      }
+    });
+  });
+}
+function saveViewState(route){
+  const s = {};
+  if (route==='home'){
+    s.month = document.getElementById('monthPicker')?.value||'';
+    s.worker = document.getElementById('homeWorker')?.value||'';
+  } else if (route==='expense'){
+    s.site = document.getElementById('exSite')?.value||'';
+    s.date = document.getElementById('exDate')?.value||'';
+    s.worker = document.getElementById('exWorker')?.value||'';
+    s.category = document.getElementById('exCategory')?.value||'';
+    s.amount = document.getElementById('exAmount')?.value||'';
+    s.vendor = document.getElementById('exVendor')?.value||'';
+    s.address = document.getElementById('exAddress')?.value||'';
+    s.memo = document.getElementById('exMemo')?.value||'';
+    s.ledgerSite = document.getElementById('ledgerSite')?.value||'';
+    s.ledgerMonth = document.getElementById('ledgerMonth')?.value||'';
+  } else if (route==='profit'){
+    s.site = document.getElementById('profitSite')?.value||'';
+    s.month = document.getElementById('profitMonth')?.value||'';
+  } else if (route==='admin'){
+    s.workerName = document.getElementById('admWorkerName')?.value||'';
+    s.daily = document.getElementById('admDaily')?.value||'';
+    s.companyName = document.getElementById('admCompanyName')?.value||'';
+    s.siteName = document.getElementById('admSiteName')?.value||'';
+    s.budget = document.getElementById('admSiteBudget')?.value||'';
+  }
+  appState.viewStates[route] = s;
+}
+function restoreViewState(route){
+  const s = appState.viewStates[route] || {};
+  if (route==='home'){
+    if (s.month) document.getElementById('monthPicker').value = s.month;
+    if (s.worker) document.getElementById('homeWorker').value = s.worker;
+  } else if (route==='expense'){
+    if (s.site) document.getElementById('exSite').value = s.site;
+    if (s.date) document.getElementById('exDate').value = s.date;
+    if (s.worker) document.getElementById('exWorker').value = s.worker;
+    if (s.category) document.getElementById('exCategory').value = s.category;
+    if (s.amount) document.getElementById('exAmount').value = s.amount;
+    if (s.vendor) document.getElementById('exVendor').value = s.vendor;
+    if (s.address) document.getElementById('exAddress').value = s.address;
+    if (s.memo) document.getElementById('exMemo').value = s.memo;
+    if (s.ledgerSite) document.getElementById('ledgerSite').value = s.ledgerSite;
+    if (s.ledgerMonth) document.getElementById('ledgerMonth').value = s.ledgerMonth;
+  } else if (route==='profit'){
+    if (s.site) document.getElementById('profitSite').value = s.site;
+    if (s.month) document.getElementById('profitMonth').value = s.month;
+  } else if (route==='admin'){
+    if (s.workerName) document.getElementById('admWorkerName').value = s.workerName;
+    if (s.daily) document.getElementById('admDaily').value = s.daily;
+    if (s.companyName) document.getElementById('admCompanyName').value = s.companyName;
+    if (s.siteName) document.getElementById('admSiteName').value = s.siteName;
+    if (s.budget) document.getElementById('admSiteBudget').value = s.budget;
+  }
+}
+async function mountView(){
+  const v = document.getElementById('view');
+  const t = document.getElementById(appState.currentRoute + 'Tpl');
+  v.innerHTML = '';
+  v.appendChild(t.content.cloneNode(true));
+  
+  // 홈 뷰일 경우 작업 모달 템플릿 추가
+  if (appState.currentRoute === 'home') {
+    const logTpl = document.getElementById('logTpl');
+    if (logTpl) {
+      v.appendChild(logTpl.content.cloneNode(true));
+    }
+  }
+  
+  restoreViewState(appState.currentRoute);
 
-  // 2) 초기 데이터(필요시) 먼저 삽입
-  await initializeData();
-
-  // 3) 그 다음 로드
-  await load();
-
-  // 4) 뷰 마운트
-  mountView();
+  if (appState.currentRoute==='home') initHome();
+  if (appState.currentRoute==='expense') initExpense();
+  if (appState.currentRoute==='profit') initProfit();
+  if (appState.currentRoute==='admin') initAdmin();
 }
 
+/* ===== 테마 ===== */
+function initTheme() {
+  const savedTheme = localStorage.getItem('theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme', theme);
+  updateThemeIcon(theme);
+}
+function updateThemeIcon(theme){
+  const icon = document.getElementById('themeIcon');
+  if (!icon) return;
+  icon.classList.toggle('fa-moon', theme==='dark');
+  icon.classList.toggle('fa-sun', theme!=='dark');
+}
+function toggleTheme(){
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+  updateThemeIcon(next);
+}
 
-// 테마 토글 버튼 이벤트 리스너
-document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+/* ===== 데이터 로드 ===== */
+async function loadBase() {
+  const [wRes, sRes] = await Promise.all([
+    supabase.from('workers').select('id, name, daily').order('name', { ascending:true }),
+    supabase.from('sites').select('id, company_name, name, budget').order('name', { ascending:true })
+  ]);
+  if (wRes.error) console.error('작업자 로드 오류:', wRes.error);
+  if (sRes.error) console.error('현장 로드 오류:', sRes.error);
+  db.workers = wRes.data || [];
+  db.sites = sRes.data || [];
+}
+async function loadRecent() {
+  const from = getFromDate(90);
+  const [wlRes, exRes] = await Promise.all([
+    supabase.from('work_logs').select('id, date, site_id, worker_id, md, note').gte('date', from),
+    supabase.from('expenses').select('id, date, site_id, worker_name, category, amount, vendor, address, memo').gte('date', from)
+  ]);
+  if (wlRes.error) console.error('작업 로그 로드 오류:', wlRes.error);
+  if (exRes.error) console.error('경비 로드 오류:', exRes.error);
+  db.workLogs = wlRes.data || [];
+  db.expenses = exRes.data || [];
+}
 
-// 앱 초기화
-init();
+/* ===== 초기 데이터 (비어있을 때만) ===== */
+async function initializeData() {
+  try {
+    const { count: wc } = await supabase.from('workers').select('*', { count: 'exact', head: true });
+    if (!wc) await supabase.from('workers').insert([{ name: '김작업', daily: 150000 }, { name: '이관리', daily: 180000 }]);
+
+    const { count: sc } = await supabase.from('sites').select('*', { count: 'exact', head: true });
+    if (!sc) await supabase.from('sites').insert([
+      { company_name: 'INOPNC', name: '시흥시청역 현장', budget: 80000000 },
+      { company_name: 'INOPNC', name: '부천 대장 현장', budget: 120000000 }
+    ]);
+  } catch (e) { console.error('초기 데이터 설정 오류:', e); }
+}
+
+/* ===== 뒤로가기/새로고침 ===== */
+document.getElementById('btnBack').addEventListener('click', ()=> history.back());
+document.getElementById('btnRefresh').addEventListener('click', async ()=>{
+  const btn = document.getElementById('btnRefresh');
+  btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i>';
+  try{
+    saveViewState(appState.currentRoute);
+    await loadRecent();
+    if (appState.currentRoute==='home'){ renderCal(); renderHomeList(); }
+    else if (appState.currentRoute==='expense'){ drawLinkedWork(); redrawExpense(); }
+    else if (appState.currentRoute==='profit'){ renderProfit(); }
+    else if (appState.currentRoute==='admin'){ await mountView(); }
+  } finally {
+    btn.disabled=false; btn.innerHTML='<i class="fas fa-sync-alt"></i>';
+  }
+});
+
+/* ===== 실시간 ===== */
+supabase.channel('realtime-all')
+  .on('postgres_changes', { event:'*', schema:'public', table:'work_logs' }, async ()=>{ await loadRecent(); if (appState.currentRoute==='home'){ renderCal(); renderHomeList(); }})
+  .on('postgres_changes', { event:'*', schema:'public', table:'expenses' }, async ()=>{ await loadRecent(); if (appState.currentRoute==='expense'){ redrawExpense(); }})
+  .subscribe();
+
+/* ===== 히스토리 ===== */
+function initHistory(){
+  const savedState = sessionStorage.getItem('appState');
+  if (savedState){
+    try{
+      const st = JSON.parse(savedState);
+      appState.currentRoute = st.route || 'home';
+      appState.viewStates = st.viewStates || appState.viewStates;
+      history.replaceState(st, '', `#${appState.currentRoute}`);
+    } catch(e){ console.error('상태 복원 오류:', e); }
+  }
+  window.addEventListener('popstate', (e)=>{
+    const st=e.state || { route:'home', viewState:{} };
+    appState.currentRoute = st.route;
+    appState.viewStates = { ...appState.viewStates, [st.route]: st.viewState || {} };
+    mountView();
+  });
+  window.addEventListener('beforeunload', ()=> sessionStorage.setItem('appState', JSON.stringify({ route: appState.currentRoute, viewStates: appState.viewStates })) );
+}
+
+/* ===== 초기화 ===== */
+async function init(){
+  initTheme();
+  initNav();
+  initHistory();
+  document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+  await initializeData();
+  await loadBase();
+  await loadRecent();
+  await mountView();
+}
+if (window.requestIdleCallback) requestIdleCallback(()=>init(), { timeout: 2000 });
+else setTimeout(()=>init(), 0);
 </script>
 </body>
 </html>
