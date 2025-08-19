@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>오프라인입니다 · INOPNC</title>
+  <style>
+    :root{--p:#0068FE;--t:#111827;--g:#6b7280;background:#f6f8fb;color:var(--t);}
+    body{margin:0;display:grid;min-height:100vh;place-items:center;font-family:system-ui,-apple-system,Segoe UI,Inter,Arial;}
+    .card{max-width:520px;background:white;padding:24px;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.08);border:1px solid #e5e7eb}
+    h1{margin:0 0 8px;font-size:22px}
+    p{margin:0 0 14px;color:var(--g);line-height:1.6}
+    .btn{display:inline-block;padding:10px 14px;border-radius:10px;border:1px solid #e5e7eb;background:#fff;font-weight:700;text-decoration:none;color:#111827}
+    .btn.primary{background:var(--p);color:#fff;border-color:var(--p)}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>오프라인 상태입니다</h1>
+    <p>네트워크 연결을 확인한 뒤 다시 시도해주세요. 설치된 앱에서는 최근에 방문한 화면 일부를 사용할 수 있습니다.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a class="btn" href="/" rel="nofollow">홈으로</a>
+      <a class="btn primary" href="javascript:location.reload()">새로고침</a>
+    </div>
+  </div>
+</body>
+</html>

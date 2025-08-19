@@ -5,13 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>INOPNC · 건설현장관리</title>
 
-  <!-- PWA -->
+  <!-- PWA 설정 -->
   <link rel="manifest" href="/manifest.webmanifest">
   <meta name="theme-color" content="#0068FE">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="INOPNC 현장관리">
+  <meta name="description" content="건설현장 작업 관리 Progressive Web App">
+  
+  <!-- 아이콘 -->
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192x192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icon-512x512.png">
   <link rel="apple-touch-icon" href="/icon-192x192.png">
-  <style>
-    .pwa-install-btn{position:fixed;right:16px;bottom:16px;z-index:9999;display:none;border:1px solid #0068FE;background:#0068FE;color:#fff;border-radius:999px;padding:10px 14px;font-weight:700;box-shadow:0 6px 16px rgba(0,0,0,.15);cursor:pointer}
-  </style>
+
   <!-- 폰트 & 아이콘 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -34,7 +40,13 @@
     --fz-btn:clamp(12px, 1.9vw, 14px);
     --fz-h2:clamp(15px, 2.2vw, 16px);
   }
-  [data-theme="dark"] { --p:#4c8dff; --t:#f3f4f6; --bg:#1f2937; --b:#374151; --g:#9ca3af; }
+  [data-theme="dark"] { 
+    --p:#4c8dff; --t:#f0f4ff; --bg:#0a1929; --b:#1e3a5f; --g:#7aa3ff;
+    --shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  }
+  [data-theme="light"] {
+    --shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
 
   *{box-sizing:border-box}
   html,body{height:100%}
@@ -42,42 +54,88 @@
     margin:0; font-family:Inter,Poppins,system-ui,-apple-system,sans-serif;
     color:var(--t); background:var(--bg); font-size:var(--fz-body);
     transition: background-color 0.3s, color 0.3s;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   /* 헤더 */
-  header{position:sticky;top:0;z-index:10;background:#fff;color:#1A254F; transition: background-color 0.3s, color 0.3s;}
-  [data-theme="dark"] header { background: #1f2937; color: #f3f4f6; }
+  header{position:sticky;top:0;z-index:10;background:#fff;color:#1A254F; transition: background-color 0.3s, color 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.1);}
+  [data-theme="dark"] header { background: #1e3a5f; color: #f0f4ff; }
   .header-inner{max-width:1100px;margin:0 auto;padding:var(--space);display:flex;align-items:center;gap:10px;justify-content:space-between}
   .brand{font-family:Poppins;font-weight:900;font-size:24px;letter-spacing:.2px;color:var(--t); transition: color 0.3s;}
 
   /* 테마 토글 버튼 */
-  .theme-toggle { background: none; border: none; color: var(--t); cursor: pointer; font-size: 20px; padding: 5px; border-radius: 50%; transition: background-color 0.3s; }
-  .theme-toggle:hover { background-color: rgba(0, 0, 0, 0.1); }
-  [data-theme="dark"] .theme-toggle:hover { background-color: rgba(255, 255, 255, 0.1); }
+  .theme-toggle { 
+    background: none; 
+    border: none; 
+    color: var(--t); 
+    cursor: pointer; 
+    font-size: 20px; 
+    padding: 5px; 
+    border-radius: 50%; 
+    transition: all 0.3s ease;
+    position: relative;
+  }
+  .theme-toggle:hover { 
+    background-color: rgba(0, 0, 0, 0.1);
+  }
+  [data-theme="dark"] .theme-toggle:hover { 
+    background-color: rgba(255, 255, 255, 0.1);
+  }
 
   /* 공통 */
   .number{font-family:Inter;font-weight:800}
   .app{max-width:1100px;margin:0 auto;padding:var(--space) var(--space) 80px}
   .card{
-    background:#fff;border-radius:var(--radius);box-shadow:0 8px 24px #00000012;padding:var(--space);border:1px solid var(--b);
-    transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
+    background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:var(--space);border:1px solid var(--b);
+    transition: all 0.3s ease;
   }
-  [data-theme="dark"] .card { background: #374151; border-color: #4b5563; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); }
+  [data-theme="dark"] .card { 
+    background: #142f4b; 
+    border-color: #1e3a5f; 
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  }
   .row{display:flex;gap:var(--space);flex-wrap:wrap}
   .row>*{flex:1 1 220px}
   label{font-size:var(--fz-label);font-weight:800;color:var(--t); display:inline-block;margin-bottom:6px; transition: color 0.3s;}
   input,select,textarea{
     width:100%;padding:10px;border:1px solid var(--b);border-radius:10px;background:#fff;font-size:var(--fz-body);
-    transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+    transition: all 0.3s ease;
   }
-  [data-theme="dark"] input, [data-theme="dark"] select, [data-theme="dark"] textarea { background: #4b5563; color: #f3f4f6; border-color: #6b7280; }
+  [data-theme="dark"] input, 
+  [data-theme="dark"] select, 
+  [data-theme="dark"] textarea { 
+    background: #1e3a5f; 
+    color: #f0f4ff; 
+    border-color: #2d5a8b;
+  }
   input::placeholder, textarea::placeholder{color:var(--g); transition: color 0.3s;}
   .btn{
     display:inline-flex;align-items:center;justify-content:center;gap:6px;height:38px;padding:0 12px;border-radius:10px;border:1px solid var(--b);background:#fff;font-weight:800;cursor:pointer;white-space:nowrap;font-size:var(--fz-btn);min-width:88px;line-height:1;
-    transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
   }
-  [data-theme="dark"] .btn { background: #4b5563; border-color: #6b7280; color: #f3f4f6; }
-  .btn.primary{background:var(--p);border-color:var(--p);color:#fff}
+  .btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+  }
+  .btn:hover::before {
+    left: 100%;
+  }
+  [data-theme="dark"] .btn { 
+    background: #1e3a5f; 
+    border-color: #2d5a8b; 
+    color: #f0f4ff;
+  }
+  .btn.primary{background:var(--p);border-color:var(--p);color:#fff;box-shadow: 0 4px 12px rgba(0, 104, 254, 0.3);}
+  .btn.primary:hover{transform: translateY(-2px);box-shadow: 0 6px 16px rgba(0, 104, 254, 0.4);}
   .btn.warn{background:#fee2e2;border-color:#fecaca;color:#991b1b}
   .btn.block{width:100%}
   .text-red{color:#dc2626}
@@ -86,28 +144,31 @@
   /* 테이블 */
   .table-scroll{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
   .table{width:100%;border-collapse:collapse;min-width:820px}
-  .table th,.table td{padding:10px 8px;border-bottom:1px solid #eef1f5;text-align:left;font-size:14px}
+  .table th,.table td{padding:10px 8px;border-bottom:1px solid #eef1f5;text-align:left;font-size:14px;transition: background-color 0.3s;}
   .table th{background:#fafafa;font-weight:700}
   .table tfoot td{background:#fafafa;font-weight:800}
-  [data-theme="dark"] .table { color:#f3f4f6 }
-  [data-theme="dark"] .table th { background:#4b5563 }
+  .table tbody tr:hover{background: rgba(0, 104, 254, 0.05);}
+  [data-theme="dark"] .table { color:#f0f4ff }
+  [data-theme="dark"] .table th { background:#1e3a5f }
+  [data-theme="dark"] .table tbody tr:hover{background: rgba(76, 141, 255, 0.1);}
 
   /* 캘린더 */
   .calbar{display:grid;grid-template-columns:1fr 1fr;gap:var(--space);align-items:end}
   .cal-head{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
   .calendar{display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:min-content;gap:6px}
-  .cell{border:1px solid var(--b);border-radius:10px;padding:6px;background:#fff;display:flex;flex-direction:column}
-  [data-theme="dark"] .cell { background:#4b5563; border-color:#6b7280 }
+  .cell{border:1px solid var(--b);border-radius:10px;padding:6px;background:#fff;display:flex;flex-direction:column;cursor:pointer;transition: all 0.3s ease;position: relative;}
+  .cell:hover{background: rgba(0, 104, 254, 0.1);}
+  [data-theme="dark"] .cell { background:#1e3a5f; border-color:#2d5a8b }
   .date{font-size:12px;font-weight:900}
-  .pill{margin-top:4px;padding:4px 6px;border-radius:8px;background:#eef3ff;border:1px dashed #9bbdff;font-size:12px;overflow:visible;display:block;white-space:normal;word-break:break-word}
-  [data-theme="dark"] .pill { background:#4b5563; border-color:#6b7280 }
+  .pill{margin-top:4px;padding:4px 6px;border-radius:8px;background:#eef3ff;border:1px dashed #9bbdff;font-size:12px;overflow:visible;display:block;white-space:normal;word-break:break-word;transition: all 0.3s ease;}
+  [data-theme="dark"] .pill { background:#1e3a5f; border-color:#2d5a8b }
   .mini{font-size:var(--fz-small);color:var(--g)}
 
   /* 모달 */
-  dialog{border:none;border-radius:16px;max-width:720px;width:92vw;padding:0;overflow:hidden}
-  dialog::backdrop{background:#00000066}
-  .modal{background:#fff}
-  [data-theme="dark"] dialog, [data-theme="dark"] .modal { background:#374151; color:#f3f4f6 }
+  dialog{border:none;border-radius:16px;max-width:720px;width:92vw;padding:0;overflow:hidden;animation: modalFadeIn 0.3s ease;}
+  dialog::backdrop{background:#00000066;animation: backdropFadeIn 0.3s ease;}
+  .modal{background:#fff;animation: modalSlideIn 0.3s ease;}
+  [data-theme="dark"] dialog, [data-theme="dark"] .modal { background:#142f4b; color:#f0f4ff }
   .modal header,.modal footer{padding:10px var(--space);border-bottom:1px solid var(--b)}
   .modal footer{border-top:1px solid var(--b);display:flex;gap:8px;justify-content:flex-end}
   #modalRows{padding:var(--space);display:grid;gap:12px}
@@ -140,50 +201,122 @@
   .admin-add-row .btn-container{display:flex;justify-content:flex-end}
   .table-wrap{overflow-x:auto}
   .admin-table{width:100%;min-width:720px}
-  .admin-table th,.admin-table td{padding:3px;border-bottom:1px solid var(--b);text-align:left;font-size:clamp(12px,1.7vw,14px)}
-  .admin-table th{background:#fafafa}
-  [data-theme="dark"] .admin-table th { background:#4b5563 }
+  .admin-table th,.admin-table td{padding:3px;border-bottom:1px solid var(--b);text-align:left;font-size:clamp(12px,1.7vw,14px);transition: background-color 0.3s;}
+  .admin-table th{background:#fafafa;font-weight:700}
+  .admin-table tbody tr:hover{background: rgba(0, 104, 254, 0.05);}
+  [data-theme="dark"] .admin-table th { background:#1e3a5f }
+  [data-theme="dark"] .admin-table tbody tr:hover{background: rgba(76, 141, 255, 0.1);}
   .admin-table .actions{text-align:right;white-space:nowrap}
   .admin-table th.actions, .admin-table td.actions{padding-left:2px}
   .wName,.wDaily,.sCompany,.sName,.sBudget{width:100%;min-width:0}
   .wDaily,.sBudget{text-align:right}
-  .admin-table .btn{min-width:auto;padding:6px 10px;height:38px}
+  .admin-table .btn{min-width:auto;padding:6px 10px;height:38px;transition: all 0.3s ease;}
   .btn-add-worker{height:38px;min-width:auto;padding:6px 10px}
 
-  /* 하단 네비 */
-  .bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:20;background:var(--p);display:grid;grid-template-columns:repeat(4,1fr);box-shadow:0 -4px 12px rgba(0,0,0,0.1); border-radius:0 !important;}
-  [data-theme="dark"] .bottom-nav { background:#374151; box-shadow:0 -4px 12px rgba(0,0,0,0.5) }
-  .nav-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;color:#fff;cursor:pointer;border:none;background:transparent;transition:.2s; border-radius:0 !important;}
-  .nav-btn i{font-size:20px;margin-bottom:4px}
-  .nav-btn span{font-size:10px;font-weight:600}
-  .nav-btn.active{background:#ffffff22}
-  .nav-btn:hover{background:#ffffff33}
+  /* 하단 네비 - 애니메이션 제거 */
+  .bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:20;background:var(--p);display:grid;grid-template-columns:repeat(4,1fr);box-shadow:0 -4px 12px rgba(0,0,0,0.1); border-radius:0 !important;transition: all 0.3s ease;}
+  [data-theme="dark"] .bottom-nav { background:#1e3a5f; box-shadow:0 -4px 12px rgba(0,0,0,0.5) }
+  .nav-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;color:#fff;cursor:pointer;border:none;background:transparent;transition: all 0.3s; border-radius:0 !important;position: relative;}
+  .nav-btn i{font-size:20px;margin-bottom:4px;transition: transform 0.3s ease;}
+  .nav-btn span{font-size:10px;font-weight:600;transition: all 0.3s ease;}
+  .nav-btn.active{background:#ffffff22;}
+  .nav-btn:hover{background:#ffffff33;}
+  .nav-btn.active:hover{background:#ffffff44;}
 
   /* 아코디언 */
-  .accordion{border:1px solid var(--b);border-radius:10px;margin-bottom:10px;overflow:hidden}
-  .accordion-header{background:#f8fafc;padding:12px 16px;font-weight:800;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
-  [data-theme="dark"] .accordion-header { background:#4b5563; color:#f3f4f6 }
-  .accordion-content{display:none;padding:16px}
-  [data-theme="dark"] .accordion-content { background:#374151; color:#f3f4f6 }
-  .accordion.active .accordion-content{display:block}
+  .accordion{border:1px solid var(--b);border-radius:10px;margin-bottom:10px;overflow:hidden;transition: all 0.3s ease;}
+  .accordion-header{background:#f8fafc;padding:12px 16px;font-weight:800;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition: all 0.3s ease;}
+  [data-theme="dark"] .accordion-header { background:#1e3a5f; color:#f0f4ff }
+  .accordion-content{display:none;padding:16px;transition: all 0.3s ease;}
+  [data-theme="dark"] .accordion-content { background:#142f4b; color:#f0f4ff }
+  .accordion.active .accordion-content{display:block;animation: slideDown 0.3s ease;}
   .accordion.active .accordion-header i{transform:rotate(180deg)}
   .accordion-header i{transition:transform .3s}
 
   /* 총계행 - 다크모드 최적화 */
-  .totals-row{font-weight:800;background:#f0f9ff}
-  [data-theme="dark"] .totals-row { background:#374151 }
-  [data-theme="dark"] .totals-row td { background: #374151; }
+  .totals-row{font-weight:800;background:#f0f9ff;animation: highlightRow 0.5s ease;}
+  [data-theme="dark"] .totals-row { background:#142f4b }
+  [data-theme="dark"] .totals-row td { background: #142f4b; }
   .totals-row td{text-align:left !important}
 
-  /* 순이익 카드 */
-  .profit-summary-card { background:#f0f9ff; border-radius:10px; padding:12px; margin-top:16px }
-  [data-theme="dark"] .profit-summary-card { background:#374151 }
+  /* 순이익 카드 - 파란색 테두리 제거 */
+  .profit-summary-card { 
+    background:#f0f9ff; 
+    border-radius:10px; 
+    padding:12px; 
+    margin-top:16px;
+    animation: slideInLeft 0.5s ease;
+  }
+  [data-theme="dark"] .profit-summary-card { 
+    background:#142f4b;
+  }
 
   /* 범용 라운드 */
   :where(.card,.btn,input,select,textarea,.cell,.pill,dialog,.modal,.accordion,.accordion-header,.accordion-content,.profit-summary-card){ border-radius:10px !important; }
 
-  @media (max-width: 600px) {
-    .app{padding:12px 12px 70px}
+  /* 애니메이션 */
+  @keyframes modalFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes backdropFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes modalSlideIn {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes slideDown {
+    from { max-height: 0; opacity: 0; }
+    to { max-height: 500px; opacity: 1; }
+  }
+  @keyframes slideInLeft {
+    from { transform: translateX(-20px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  @keyframes highlightRow {
+    0% { background-color: rgba(0, 104, 254, 0.2); }
+    100% { background-color: inherit; }
+  }
+
+  /* 오프라인 상태 표시 */
+  .offline-indicator {
+    position: fixed;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #dc2626;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    z-index: 1000;
+    display: none;
+    animation: slideDown 0.3s ease;
+  }
+  .offline-indicator.show {
+    display: block;
+  }
+
+  /* 로딩 스피너 */
+  .loading-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* 반응형 디자인 */
+  @media (max-width: 768px) {
+    .app{padding:12px 12px 80px}
     .card{padding:12px}
     .btn{height:40px;min-width:72px;padding:0 10px}
     .admin-add-row{gap:8px;margin-bottom:8px}
@@ -200,6 +333,9 @@
     input,select,textarea{padding:8px}
     .admin-table th{font-size:11px}
     .admin-table th,.admin-table td{padding:3px}
+    .header-inner{padding:12px;gap:8px}
+    .brand{font-size:20px}
+    .calbar{grid-template-columns:1fr;gap:8px}
   }
   @media (max-width: 360px) {
     .admin-table{min-width:0}
@@ -209,18 +345,30 @@
 </head>
 
 <body>
-  <!-- PWA 설치 버튼(반드시 body 안) -->
-  <button id="pwaInstallBtn" class="pwa-install-btn">앱 설치</button>
+  <!-- 오프라인 상태 표시기 -->
+  <div id="offlineIndicator" class="offline-indicator">
+    <i class="fas fa-wifi-slash"></i> 오프라인 상태입니다
+  </div>
 
   <header>
     <div class="header-inner">
       <div style="display:flex; gap:10px; align-items:center;">
-        <button class="btn" id="btnBack" title="뒤로가기"><i class="fas fa-arrow-left"></i></button>
+        <button class="btn" id="btnBack" title="뒤로가기">
+          <i class="fas fa-arrow-left"></i>
+        </button>
         <div class="brand">INOPNC</div>
       </div>
       <div style="display:flex; gap:10px; align-items:center;">
-        <button class="btn" id="btnRefresh" title="새로고침"><i class="fas fa-sync-alt"></i></button>
-        <button class="theme-toggle" id="themeToggle" aria-label="테마 전환"><i class="fas fa-sun" id="themeIcon"></i></button>
+        <button class="btn" id="btnRefresh" title="새로고침">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+        <button class="theme-toggle" id="themeToggle" aria-label="테마 전환">
+          <i class="fas fa-sun" id="themeIcon"></i>
+        </button>
+        <!-- PWA 앱 설치 버튼 -->
+        <button class="btn" id="installAppBtn" style="display:none;">
+          <i class="fas fa-download"></i> 앱 설치
+        </button>
       </div>
     </div>
   </header>
@@ -230,10 +378,22 @@
   </div>
 
   <nav class="bottom-nav">
-    <button class="nav-btn active" data-route="home"><i class="fas fa-home"></i><span>홈</span></button>
-    <button class="nav-btn" data-route="expense"><i class="fas fa-receipt"></i><span>경비관리</span></button>
-    <button class="nav-btn" data-route="profit"><i class="fas fa-chart-line"></i><span>수익분석</span></button>
-    <button class="nav-btn" data-route="admin"><i class="fas fa-cog"></i><span>관리자설정</span></button>
+    <button class="nav-btn active" data-route="home">
+      <i class="fas fa-home"></i>
+      <span>홈</span>
+    </button>
+    <button class="nav-btn" data-route="expense">
+      <i class="fas fa-receipt"></i>
+      <span>경비관리</span>
+    </button>
+    <button class="nav-btn" data-route="profit">
+      <i class="fas fa-chart-line"></i>
+      <span>수익분석</span>
+    </button>
+    <button class="nav-btn" data-route="admin">
+      <i class="fas fa-cog"></i>
+      <span>관리자설정</span>
+    </button>
   </nav>
 
   <!-- ================== Templates ================== -->
@@ -255,7 +415,9 @@
       <div class="row" style="align-items:end">
         <div class="mini">작업자 미선택 시 해당 월 전체 표시</div>
         <div style="flex:1 1 auto"></div>
-        <button class="btn primary" id="btnExportHome">출력 엑셀 내보내기</button>
+        <button class="btn primary" id="btnExportHome">
+          <i class="fas fa-file-excel"></i> 출력 엑셀 내보내기
+        </button>
       </div>
       <div class="table-scroll" style="margin-top:10px">
         <table class="table" id="homeListTable">
@@ -290,7 +452,11 @@
           <div class="form-field"><label for="exDate">사용일</label><input type="date" id="exDate"></div>
           <div class="form-field"><label for="exWorker">작업자</label><select id="exWorker"></select></div>
           <div class="form-field"><label for="exCategory">항목</label>
-            <select id="exCategory"><option>아침</option><option>점심</option><option>저녁</option><option>유류</option><option>숙박</option><option>잡자재</option><option>장비</option><option>NPC-1000</option><option>운임</option><option>기타</option></select>
+            <select id="exCategory">
+              <option>아침</option><option>점심</option><option>저녁</option>
+              <option>유류</option><option>숙박</option><option>잡자재</option>
+              <option>장비</option><option>NPC-1000</option><option>운임</option><option>기타</option>
+            </select>
           </div>
           <div class="form-field"><label for="exAmount">금액</label><input type="number" id="exAmount" min="0" step="1" inputmode="numeric" pattern="[0-9]*"></div>
           <div class="form-field"><label for="exVendor">사용처</label><input id="exVendor" placeholder="가게/거래처"></div>
@@ -298,9 +464,13 @@
           <div class="form-field"><label for="exMemo">메모</label><input id="exMemo" placeholder="비고"></div>
         </div>
         <div class="row" style="gap:8px;margin-top:6px">
-          <button class="btn" id="btnExcelFill"><i class="fas fa-file-excel"></i> 엑셀 업로드로 자동입력</button>
+          <button class="btn" id="btnExcelFill">
+            <i class="fas fa-file-excel"></i> 엑셀 업로드로 자동입력
+          </button>
           <input type="file" id="excelFile" accept=".xlsx,.xls" style="display:none">
-          <button class="btn primary block" id="btnSaveExpense">지출 저장</button>
+          <button class="btn primary block" id="btnSaveExpense">
+            <i class="fas fa-save"></i> 지출 저장
+          </button>
         </div>
       </div>
 
@@ -308,7 +478,9 @@
       <div class="card" style="margin-top:var(--lg);">
         <div class="accordion">
           <div class="accordion-header">
-            <h2 style="margin:0; font-size:var(--fz-h2); color:var(--g)">작업로그 연동</h2>
+            <h2 style="margin:0; font-size:var(--fz-h2); color:var(--g)">
+              <i class="fas fa-link"></i> 작업로그 연동
+            </h2>
             <i class="fas fa-chevron-down"></i>
           </div>
           <div class="accordion-content">
@@ -330,7 +502,9 @@
 
     <!-- 금전출납부 -->
     <div class="card" style="margin-top: var(--lg);">
-      <h2 style="margin:0 0 var(--space); font-size:var(--fz-h2); color:var(--g)">금전출납부</h2>
+      <h2 style="margin:0 0 var(--space); font-size:var(--fz-h2); color:var(--g)">
+        금전출납부
+      </h2>
       <div class="ledger-container">
         <div class="ledger-row">
           <div class="ledger-col">
@@ -344,7 +518,9 @@
         </div>
 
         <div class="ledger-section">
-          <div style="font-weight:900;margin-bottom:8px">인건비 현황</div>
+          <div style="font-weight:900;margin-bottom:8px">
+            인건비 현황
+          </div>
           <div class="table-scroll">
             <table class="table" id="laborTable">
               <thead>
@@ -367,7 +543,9 @@
         </div>
 
         <div class="ledger-section">
-          <div style="font-weight:900;margin-bottom:8px">경비 현황</div>
+          <div style="font-weight:900;margin-bottom:8px">
+            경비 현황
+          </div>
           <div class="table-scroll">
             <table class="table" id="expenseTable">
               <thead>
@@ -389,7 +567,9 @@
 
         <div class="profit-summary-card">
           <div style="text-align:center; width:100%">
-            <div style="font-size:clamp(14px, 1.9vw, 16px); font-weight:800; margin-bottom:8px">순수익 계산</div>
+            <div style="font-size:clamp(14px, 1.9vw, 16px); font-weight:800; margin-bottom:8px">
+              순수익 계산
+            </div>
             <div style="display:flex; justify-content:center; align-items:center; gap:8px; flex-wrap:wrap">
               <span class="number" id="calcBudget">0원</span>
               <span class="text-red">-</span>
@@ -403,7 +583,9 @@
         </div>
 
         <div class="ledger-row">
-          <button class="btn primary block" id="btnExportLedger">금전출납 엑셀</button>
+          <button class="btn primary block" id="btnExportLedger">
+            <i class="fas fa-download"></i> 금전출납 엑셀
+          </button>
         </div>
       </div>
     </div>
@@ -412,26 +594,41 @@
   <!-- 수익분석 -->
   <template id="profitTpl">
     <div class="card">
-      <h2 style="margin:0 0 var(--space); font-size:var(--fz-h2); color:var(--g)">수익분석</h2>
+      <h2 style="margin:0 0 var(--space); font-size:var(--fz-h2); color:var(--g)">
+        수익분석
+      </h2>
       <div class="profit-filter">
         <div><label for="profitSite">현장</label><select id="profitSite"><option value="">전체</option></select></div>
         <div><label for="profitMonth">월</label><input class="w-month" type="month" id="profitMonth"></div>
       </div>
 
       <div class="row" style="margin: var(--lg) 0 var(--space)">
-        <div class="card" style="flex:1 1 200px;text-align:center"><div class="mini">총 예산</div><div id="profitCardTotalBudget" class="number" style="font-size:22px;font-weight:900;margin-top:8px">0원</div></div>
-        <div class="card" style="flex:1 1 200px;text-align:center"><div class="mini">인건비(총급여)</div><div id="profitCardTotalLabor" class="number" style="font-size:22px;font-weight:900;margin-top:8px">0원</div></div>
-        <div class="card" style="flex:1 1 200px;text-align:center"><div class="mini">경비지출</div><div id="profitCardTotalExpense" class="number" style="font-size:22px;font-weight:900;margin-top:8px">0원</div></div>
-        <div class="card" style="flex:1 1 200px;text-align:center"><div class="mini">순이익</div><div id="profitCardNetProfit" class="number text-blue" style="font-size:22px;font-weight:900;margin-top:8px">0원</div></div>
+        <div class="card" style="flex:1 1 200px;text-align:center">
+          <div class="mini">총 예산</div>
+          <div id="profitCardTotalBudget" class="number" style="font-size:22px;font-weight:900;margin-top:8px">0원</div>
+        </div>
+        <div class="card" style="flex:1 1 200px;text-align:center">
+          <div class="mini">인건비(총급여)</div>
+          <div id="profitCardTotalLabor" class="number" style="font-size:22px;font-weight:900;margin-top:8px">0원</div>
+        </div>
+        <div class="card" style="flex:1 1 200px;text-align:center">
+          <div class="mini">경비지출</div>
+          <div id="profitCardTotalExpense" class="number" style="font-size:22px;font-weight:900;margin-top:8px">0원</div>
+        </div>
+        <div class="card" style="flex:1 1 200px;text-align:center">
+          <div class="mini">순이익</div>
+          <div id="profitCardNetProfit" class="number text-blue" style="font-size:22px;font-weight:900;margin-top:8px">0원</div>
+        </div>
       </div>
 
       <div class="card" style="margin-top: var(--space)">
-        <div style="font-weight:900;margin-bottom:8px">인건비 현황</div>
+        <div style="font-weight:900;margin-bottom:8px">
+          인건비 현황
+        </div>
         <div class="table-scroll">
           <table class="table" id="payWorkerTable">
             <thead>
               <tr>
-                <!-- 홈/경비관리와 동일한 포맷 -->
                 <th>작업자</th><th>일자</th><th>현장</th><th>공수</th><th>총급여</th><th>세금(3.3%)</th><th>실수령액</th>
               </tr>
             </thead>
@@ -450,10 +647,16 @@
       </div>
 
       <div class="card" style="margin-top: var(--space)">
-        <div style="font-weight:900;margin-bottom:8px">금전출납</div>
+        <div style="font-weight:900;margin-bottom:8px">
+          금전출납
+        </div>
         <div class="table-scroll">
           <table class="table" id="siteFinanceTable">
-            <thead><tr><th>년-월</th><th>현장</th><th>총 예산</th><th>인건비(총급여)</th><th>경비지출</th><th>순이익</th></tr></thead>
+            <thead>
+              <tr>
+                <th>년-월</th><th>현장</th><th>총 예산</th><th>인건비(총급여)</th><th>경비지출</th><th>순이익</th>
+              </tr>
+            </thead>
             <tbody></tbody>
             <tfoot>
               <tr class="totals-row">
@@ -473,11 +676,13 @@
   <template id="adminTpl">
     <div class="admin-grid">
       <div class="card">
-        <h2 style="margin:0 0 var(--space); font-size:var(--fz-h2); color:var(--g)">작업자 관리</h2>
+        <h2 style="margin:0 0 var(--space); font-size:var(--fz-h2); color:var(--g)">
+          <i class="fas fa-user-cog"></i> 작업자 관리
+        </h2>
         <div class="admin-add-row worker-grid">
           <div><label for="admWorkerName">작업자명</label><input id="admWorkerName" class="wName" placeholder="김작업"></div>
           <div><label for="admDaily">일당</label><input id="admDaily" type="number" min="0" step="1" placeholder="150000" inputmode="numeric" pattern="[0-9]*" class="wDaily"></div>
-          <div class="btn-container"><button class="btn primary btn-add-worker" id="btnAddWorker">추가</button></div>
+          <div class="btn-container"><button class="btn primary btn-add-worker" id="btnAddWorker"><i class="fas fa-plus"></i> 추가</button></div>
         </div>
         <div class="table-wrap">
           <table class="admin-table" id="workerTable">
@@ -494,12 +699,14 @@
       </div>
 
       <div class="card">
-        <h2 style="margin:0 0 var(--space); font-size:var(--fz-h2); color:var(--g)">현장 관리</h2>
+        <h2 style="margin:0 0 var(--space); font-size:var(--fz-h2); color:var(--g)">
+          <i class="fas fa-building"></i> 현장 관리
+        </h2>
         <div class="admin-add-row site-grid">
           <div><label for="admCompanyName">회사</label><input id="admCompanyName" class="sCompany" placeholder="INOPNC"></div>
           <div><label for="admSiteName">현장명</label><input id="admSiteName" class="sName" placeholder="시흥시청역"></div>
           <div><label for="admSiteBudget">총 예산</label><input id="admSiteBudget" type="number" min="0" step="1" placeholder="80000000" inputmode="numeric" pattern="[0-9]*" class="sBudget"></div>
-          <div class="btn-container"><button class="btn primary btn-add-worker" id="btnAddSite">추가</button></div>
+          <div class="btn-container"><button class="btn primary btn-add-worker" id="btnAddSite"><i class="fas fa-plus"></i> 추가</button></div>
         </div>
         <div class="table-wrap">
           <table class="admin-table" id="siteTable">
@@ -522,18 +729,29 @@
   <template id="logTpl">
     <dialog id="logModal">
       <div class="modal">
-        <header><div style="font-weight:900;color:#fff" id="modalDate">작업기록</div></header>
+        <header>
+          <div style="font-weight:900;color:#fff" id="modalDate">
+            <i class="fas fa-calendar-alt"></i> 작업기록
+          </div>
+        </header>
         <div id="modalRows"></div>
         <footer>
-          <button class="btn" id="btnAddRow">+ 추가</button>
-          <button class="btn" id="btnCloseModal">닫기</button>
-          <button class="btn primary" id="btnSaveLogs">저장</button>
+          <button class="btn" id="btnAddRow"><i class="fas fa-plus"></i> 추가</button>
+          <button class="btn" id="btnCloseModal"><i class="fas fa-times"></i> 닫기</button>
+          <button class="btn primary" id="btnSaveLogs"><i class="fas fa-save"></i> 저장</button>
         </footer>
       </div>
     </dialog>
   </template>
 
   <script>
+  /* ===== PWA 상태 관리 ===== */
+  const pwaState = {
+    isOnline: navigator.onLine,
+    deferredPrompt: null,
+    isInstalled: false
+  };
+
   /* ===== Supabase 설정 ===== */
   const SUPABASE_URL = 'https://pkrgosfznqzklabzjllv.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrcmdvc2Z6bnF6a2xhYnpqbGx2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwNDg1MjUsImV4cCI6MjA3MDYyNDUyNX0.-PsE0Cpgoonjw5ZSwzI6fUb3O9WQLpBbwl59DUCGBj4';
@@ -568,7 +786,7 @@
   const workerName = id => (workerById(id) || {}).name || '';
 
   function fillSiteSelect(sel){
-    const includeAll = sel.id !== 'exSite'; // 입력폼 제외
+    const includeAll = sel.id !== 'exSite';
     let ops = includeAll ? '<option value="">전체</option>' : '';
     ops += db.sites.map(s => `<option value="${s.id}">${(s.company_name||'')+' '+(s.name||'')}</option>`).join('');
     sel.innerHTML = ops;
@@ -816,7 +1034,7 @@
       <input class="md" type="number" step="0.5" min="0" value="${r?.md ?? 1}">
       <div class="row2">
         <input class="note" placeholder="메모" value="${r?.note || ''}">
-        <button class="btn warn del">삭제</button>
+        <button class="btn warn del"><i class="fas fa-trash"></i></button>
       </div>
     `;
     div.querySelector('.del').onclick = () => { div.remove(); };
@@ -879,7 +1097,7 @@
     document.getElementById('btnSaveExpense').onclick = onSaveExpense;
 
     // 필터 초기화 및 이벤트
-    fillSiteSelect(document.getElementById('ledgerSite')); // 전체 포함
+    fillSiteSelect(document.getElementById('ledgerSite'));
     document.getElementById('ledgerMonth').value = fmtYM(new Date());
     ['ledgerSite','ledgerMonth'].forEach(id => document.getElementById(id).onchange = redrawExpense);
     redrawExpense();
@@ -921,7 +1139,8 @@
     if (!v.ok){ alert('지출 저장 오류: '+v.message); return; }
 
     const btn = document.getElementById('btnSaveExpense');
-    btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> 저장 중...';
+    btn.disabled=true; btn.innerHTML='<div class="loading-spinner"></div> 저장 중...';
+    
     try{
       const { error } = await supabase.from('expenses').insert([ex]);
       if (error) throw error;
@@ -933,7 +1152,7 @@
       console.error('지출 저장 오류:', err);
       alert('지출 저장 오류: ' + (err?.message || '알 수 없는 오류'));
     } finally {
-      btn.disabled=false; btn.innerHTML='지출 저장';
+      btn.disabled=false; btn.innerHTML='<i class="fas fa-save"></i> 지출 저장';
     }
   }
   function drawLinkedWork(){
@@ -957,9 +1176,8 @@
       tbody.appendChild(tr);
     });
   }
-  /* 금전출납부 렌더 */
   function redrawExpense(){
-    const siteId = document.getElementById('ledgerSite').value; // ""=전체
+    const siteId = document.getElementById('ledgerSite').value;
     const month = document.getElementById('ledgerMonth').value;
 
     const homeSiteId = document.getElementById('homeSite')?.value || null;
@@ -984,19 +1202,93 @@
     setWon('calcLabor', totalGross);
     setWon('calcExpense', expenseTotal);
     const pEl = document.getElementById('calcProfit');
-    if (pEl){ pEl.textContent = KR(profit)+'원'; pEl.className = `number ${profit>=0? 'text-blue':'text-red'}`; }
+    if (pEl){ 
+      pEl.textContent = KR(profit)+'원'; 
+      pEl.className = `number ${profit>=0? 'text-blue':'text-red'}`; 
+    }
 
-    // 엑셀 내보내기 (요약)
-    document.getElementById('btnExportLedger').onclick = ()=>{
-      const wsData = [["항목","값"],
-        ["예산", document.getElementById('calcBudget').textContent],
-        ["인건비", document.getElementById('calcLabor').textContent],
-        ["경비", document.getElementById('calcExpense').textContent],
-        ["순이익", document.getElementById('calcProfit').textContent]];
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(wsData), '금전출납 요약');
-      XLSX.writeFile(wb, `금전출납_${month || fmtYM(new Date())}.xlsx`);
-    };
+// 엑셀 내보내기 (현장/월/인건비 현황/경비 현황만)
+document.getElementById('btnExportLedger').onclick = () => {
+  const wb = XLSX.utils.book_new();
+  const siteLabel  = siteId ? siteName(siteId) : '전체 현장';
+  const monthLabel = month || '전체 기간';
+
+  // 1) 인건비 현황 시트
+  const laborSheetData = [
+    ['현장', siteLabel],
+    ['월', monthLabel],
+    [],
+    ['작업자','일자','현장','공수','총급여','세금(3.3%)','실수령액']
+  ];
+
+  laborRows.forEach(row => {
+    // 숫자 재계산(엑셀에서 계산 가능하도록)
+    const w = workerById(row.worker_id) || {};
+    const md = Number(row.md || 0);
+    const gross = md * (w.daily || 0);
+    const tax = Math.round(gross * 0.033);
+    const net = gross - tax;
+
+    laborSheetData.push([
+      row.worker,
+      row.date,
+      row.site,
+      md,
+      gross,   // 총급여 숫자
+      -tax,    // 세금은 음수로 표시
+      net      // 실수령액 숫자
+    ]);
+  });
+
+  // 총계 행 (숫자)
+  laborSheetData.push(['', '', '', '합계', totalGross, -totalTax, totalNet]);
+
+  XLSX.utils.book_append_sheet(
+    wb,
+    XLSX.utils.aoa_to_sheet(laborSheetData),
+    '인건비 현황'
+  );
+
+  // 2) 경비 현황 시트
+  const expenseSheetData = [
+    ['현장', siteLabel],
+    ['월', monthLabel],
+    [],
+    ['사용일','작업자','항목','금액','사용처','주소','메모']
+  ];
+
+  expenseRows.forEach(row => {
+    // 금액 문자열(예: "12,000원") -> 숫자
+    const amt = typeof row.amount === 'number'
+      ? row.amount
+      : parseInt(String(row.amount).replace(/[^\d]/g, ''), 10) || 0;
+
+    expenseSheetData.push([
+      row.date,
+      row.worker_name,
+      row.category,
+      amt,         // 숫자
+      row.vendor,
+      row.address,
+      row.memo
+    ]);
+  });
+
+  // 총계 행 (숫자)
+  expenseSheetData.push(['', '', '', '합계', '', '', '']); // 시각용 행
+  expenseSheetData.push(['', '', '', expenseTotal, '', '', '']);
+
+  XLSX.utils.book_append_sheet(
+    wb,
+    XLSX.utils.aoa_to_sheet(expenseSheetData),
+    '경비 현황'
+  );
+
+  // 저장
+  const safeMonth = monthLabel.replace(/[^\d-]/g, '') || '전체';
+  const fileName = `금전출납부_${siteLabel}_${safeMonth}.xlsx`;
+  XLSX.writeFile(wb, fileName);
+};
   }
 
   /* 경비 삭제 */
@@ -1016,7 +1308,7 @@
 
   /* ===== 수익분석 ===== */
   function initProfit(){
-    fillSiteSelect(document.getElementById('profitSite')); // 전체 포함
+    fillSiteSelect(document.getElementById('profitSite'));
     document.getElementById('profitMonth').value = fmtYM(new Date());
     ['profitSite','profitMonth'].forEach(id => document.getElementById(id).onchange = renderProfit);
     renderProfit();
@@ -1280,10 +1572,10 @@
 
     restoreViewState(appState.currentRoute);
 
-    if (appState.currentRoute==='home') initHome();
-    if (appState.currentRoute==='expense') initExpense();
-    if (appState.currentRoute==='profit') initProfit();
-    if (appState.currentRoute==='admin') initAdmin();
+    if (appState.currentRoute === 'home') initHome();
+    if (appState.currentRoute === 'expense') initExpense();
+    if (appState.currentRoute === 'profit') initProfit();
+    if (appState.currentRoute === 'admin') initAdmin();
   }
 
   /* ===== 테마 ===== */
@@ -1306,6 +1598,74 @@
     document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem('theme', next);
     updateThemeIcon(next);
+  }
+
+  /* ===== PWA 앱 설치 기능 ===== */
+  function initPWAInstall() {
+    // 앱 설치 상태 확인
+    function isPWAInstalled() {
+      return window.matchMedia('(display-mode: standalone)').matches || 
+             window.matchMedia('(display-mode: fullscreen)').matches ||
+             window.matchMedia('(display-mode: minimal-ui)').matches;
+    }
+
+    // beforeinstallprompt 이벤트 핸들러
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      pwaState.deferredPrompt = e;
+
+      // 앱이 설치되어 있지 않으면 버튼을 보여줍니다.
+      if (!isPWAInstalled()) {
+        const installBtn = document.getElementById('installAppBtn');
+        if (installBtn) {
+          installBtn.style.display = 'flex';
+        }
+      }
+    });
+
+    // 앱 설치 버튼 클릭 핸들러
+    const installBtn = document.getElementById('installAppBtn');
+    if (installBtn) {
+      installBtn.addEventListener('click', async () => {
+        if (!pwaState.deferredPrompt) return;
+        
+        installBtn.disabled = true;
+        installBtn.innerHTML = '<div class="loading-spinner"></div> 설치 중...';
+        
+        try {
+          const { outcome } = await pwaState.deferredPrompt.prompt();
+          pwaState.deferredPrompt = null;
+          
+          if (outcome === 'accepted') {
+            installBtn.style.display = 'none';
+          }
+        } catch (error) {
+          console.error('앱 설치 오류:', error);
+        } finally {
+          installBtn.disabled = false;
+          installBtn.innerHTML = '<i class="fas fa-download"></i> 앱 설치';
+        }
+      });
+    }
+
+    // 앱이 설치되었을 때 버튼을 제거합니다.
+    window.addEventListener('appinstalled', () => {
+      pwaState.isInstalled = true;
+      const installBtn = document.getElementById('installAppBtn');
+      if (installBtn) {
+        installBtn.style.display = 'none';
+      }
+    });
+
+    // 페이지 로드 시 앱 설치 상태 확인
+    window.addEventListener('load', () => {
+      if (isPWAInstalled()) {
+        const installBtn = document.getElementById('installAppBtn');
+        if (installBtn) {
+          installBtn.style.display = 'none';
+        }
+      }
+    });
   }
 
   /* ===== 데이터 로드 ===== */
@@ -1347,25 +1707,67 @@
 
   /* ===== 뒤로가기/새로고침 ===== */
   document.getElementById('btnBack').addEventListener('click', ()=> history.back());
-  document.getElementById('btnRefresh').addEventListener('click', async ()=>{
-    const btn = document.getElementById('btnRefresh');
-    btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i>';
-    try{
+  
+  // 개선된 새로고침 기능 - 로딩 스피너만 표시
+  document.getElementById('btnRefresh').addEventListener('click', async function() {
+    const btn = this;
+    const originalContent = btn.innerHTML;
+    
+    // 로딩 상태 표시 - 텍스트 제거하고 스피너만 표시
+    btn.disabled = true;
+    btn.innerHTML = '<div class="loading-spinner"></div>';
+    
+    try {
+      // 현재 상태 저장
       saveViewState(appState.currentRoute);
+      
+      // 데이터 새로고침
       await loadRecent();
-      if (appState.currentRoute==='home'){ renderCal(); renderHomeList(); }
-      else if (appState.currentRoute==='expense'){ drawLinkedWork(); redrawExpense(); }
-      else if (appState.currentRoute==='profit'){ renderProfit(); }
-      else if (appState.currentRoute==='admin'){ await mountView(); }
+      
+      // 현재 뷰 새로고침
+      if (appState.currentRoute === 'home') {
+        renderCal();
+        renderHomeList();
+      } else if (appState.currentRoute === 'expense') {
+        drawLinkedWork();
+        redrawExpense();
+      } else if (appState.currentRoute === 'profit') {
+        renderProfit();
+      } else if (appState.currentRoute === 'admin') {
+        await mountView();
+      }
+      
+      // 성공 알림 (간단히)
+      btn.style.transform = 'scale(1.1)';
+      setTimeout(() => {
+        btn.style.transform = 'scale(1)';
+      }, 200);
+      
+    } catch (error) {
+      console.error('새로고침 오류:', error);
+      alert('새로고침 중 오류가 발생했습니다. 다시 시도해주세요.');
     } finally {
-      btn.disabled=false; btn.innerHTML='<i class="fas fa-sync-alt"></i>';
+      // 버튼 원래 상태로 복원
+      btn.disabled = false;
+      btn.innerHTML = originalContent;
     }
   });
 
   /* ===== 실시간 ===== */
   supabase.channel('realtime-all')
-    .on('postgres_changes', { event:'*', schema:'public', table:'work_logs' }, async ()=>{ await loadRecent(); if (appState.currentRoute==='home'){ renderCal(); renderHomeList(); }})
-    .on('postgres_changes', { event:'*', schema:'public', table:'expenses' }, async ()=>{ await loadRecent(); if (appState.currentRoute==='expense'){ redrawExpense(); }})
+    .on('postgres_changes', { event:'*', schema:'public', table:'work_logs' }, async ()=>{ 
+      await loadRecent(); 
+      if (appState.currentRoute==='home'){ 
+        renderCal(); 
+        renderHomeList(); 
+      }
+    })
+    .on('postgres_changes', { event:'*', schema:'public', table:'expenses' }, async ()=>{ 
+      await loadRecent(); 
+      if (appState.currentRoute==='expense'){ 
+        redrawExpense(); 
+      }
+    })
     .subscribe();
 
   /* ===== 히스토리 ===== */
@@ -1388,93 +1790,93 @@
     window.addEventListener('beforeunload', ()=> sessionStorage.setItem('appState', JSON.stringify({ route: appState.currentRoute, viewStates: appState.viewStates })) );
   }
 
+  /* ===== 네트워크 상태 감시 ===== */
+  function initNetworkStatus() {
+    function updateOnlineStatus() {
+      const indicator = document.getElementById('offlineIndicator');
+      if (navigator.onLine) {
+        indicator.classList.remove('show');
+        pwaState.isOnline = true;
+      } else {
+        indicator.classList.add('show');
+        pwaState.isOnline = false;
+      }
+    }
+
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    updateOnlineStatus();
+  }
+
+  /* ===== PWA 기능 ===== */
+  function initPWA() {
+    // 네트워크 상태 감시
+    initNetworkStatus();
+    
+    // Service Worker 등록
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', async () => {
+        try {
+          // Service Worker 파일 존재 확인
+          const response = await fetch('/service-worker.js', { method: 'HEAD' });
+          if (!response.ok) {
+            console.warn('Service Worker 파일을 찾을 수 없습니다');
+            return;
+          }
+
+          const registration = await navigator.serviceWorker.register('/service-worker.js', {
+            scope: '/'
+          });
+          
+          console.log('Service Worker 등록 성공:', registration.scope);
+          
+          // 업데이트 감지
+          registration.addEventListener('updatefound', () => {
+            const installingWorker = registration.installing;
+            installingWorker.addEventListener('statechange', () => {
+              if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                console.log('새 버전이 발견되었습니다. 페이지를 새로고침하세요.');
+                // 사용자에게 알림 표시
+                if (confirm('새 버전이 있습니다. 페이지를 새로고침하시겠습니까?')) {
+                  window.location.reload();
+                }
+              }
+            });
+          });
+        } catch (error) {
+          console.error('Service Worker 등록 실패:', error);
+        }
+      });
+    }
+  }
+
   /* ===== 초기화 ===== */
   async function init(){
+    // PWA 초기화
+    initPWA();
+    
+    // PWA 앱 설치 기능 초기화
+    initPWAInstall();
+    
+    // 기본 초기화
     initTheme();
     initNav();
     initHistory();
     document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+    
+    // 데이터 초기화
     await initializeData();
     await loadBase();
     await loadRecent();
     await mountView();
   }
-  if (window.requestIdleCallback) requestIdleCallback(()=>init(), { timeout: 2000 });
-  else setTimeout(()=>init(), 0);
-  </script>
 
-  <!-- PWA 설치 & 서비스워커 등록 -->
-  <script>
-    let _deferredPrompt=null;
-    window.addEventListener('beforeinstallprompt',(e)=>{
-      e.preventDefault();
-      _deferredPrompt=e;
-      const b=document.getElementById('pwaInstallBtn');
-      if(b) b.style.display='inline-flex';
-    });
-    document.getElementById('pwaInstallBtn')?.addEventListener('click',async()=>{
-      if(!_deferredPrompt){ alert('설치를 준비중입니다. 잠시 후 다시 시도해주세요.'); return; }
-      _deferredPrompt.prompt();
-      await _deferredPrompt.userChoice;
-      _deferredPrompt=null;
-      const b=document.getElementById('pwaInstallBtn');
-      if(b) b.style.display='none';
-    });
-
-    // ?no-sw 로 임시 비활성화 가능
-    if('serviceWorker' in navigator && !location.search.includes('no-sw')){
-      window.addEventListener('load', async ()=>{
-        try{
-          // 등록 전 파일 존재 확인(404 방지 디버깅)
-          const headRes = await fetch('/service-worker.js?v=105', { method:'HEAD' });
-          if(!headRes.ok) throw new Error('서비스워커 파일 미존재 또는 404');
-
-          const reg = await navigator.serviceWorker.register('/service-worker.js?v=105', { scope: '/' });
-          console.log('[PWA] SW registered:', reg.scope);
-        }catch(err){
-          console.error('[PWA] SW registration failed:', err);
-        }
-      });
-    }
-  </script>
-
-  <!-- Live Server(개발용) -->
-  <script>
-    // <![CDATA[
-    if ('WebSocket' in window) {
-      (function () {
-        function refreshCSS() {
-          var sheets = [].slice.call(document.getElementsByTagName("link"));
-          var head = document.getElementsByTagName("head")[0];
-          for (var i = 0; i < sheets.length; ++i) {
-            var elem = sheets[i];
-            var parent = elem.parentElement || head;
-            parent.removeChild(elem);
-            var rel = elem.rel;
-            if (elem.href && typeof rel != "string" || rel.length == 0 || rel.toLowerCase() == "stylesheet") {
-              var url = elem.href.replace(/(&|\?)_cacheOverride=\d+/, '');
-              elem.href = url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cacheOverride=' + (new Date().valueOf());
-            }
-            parent.appendChild(elem);
-          }
-        }
-        var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
-        var address = protocol + window.location.host + window.location.pathname + '/ws';
-        var socket = new WebSocket(address);
-        socket.onmessage = function (msg) {
-          if (msg.data == 'reload') window.location.reload();
-          else if (msg.data == 'refreshcss') refreshCSS();
-        };
-        if (sessionStorage && !sessionStorage.getItem('IsThisFirstTime_Log_From_LiveServer')) {
-          console.log('Live reload enabled.');
-          sessionStorage.setItem('IsThisFirstTime_Log_From_LiveServer', true);
-        }
-      })();
-    }
-    else {
-      console.error('Upgrade your browser. This Browser is NOT supported WebSocket for Live-Reloading.');
-    }
-    // ]]>
+  // 앱 시작
+  if (window.requestIdleCallback) {
+    requestIdleCallback(() => init(), { timeout: 2000 });
+  } else {
+    setTimeout(() => init(), 0);
+  }
   </script>
 </body>
 </html>
