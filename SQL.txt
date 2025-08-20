@@ -1,0 +1,302 @@
+-- =============================================================================
+-- 이노프NC · 건설현장관리 기본 스키마(생성+교정+RLS) - Supabase용 단일 스크립트
+-- =============================================================================
+
+-- 0) 필수 확장
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+-- 1) 테이블 생성 (없을 때만)
+CREATE TABLE IF NOT EXISTS public.workers (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  daily int4 NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.sites (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_name text,
+  name text NOT NULL,
+  budget int4 NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.work_logs (
+  id text PRIMARY KEY,  -- 프론트에서 uid()로 생성해 넣음
+  date date NOT NULL,
+  site_id uuid NOT NULL REFERENCES public.sites(id) ON DELETE CASCADE,
+  worker_id uuid NOT NULL REFERENCES public.workers(id) ON DELETE CASCADE,
+  md numeric(4,1) NOT NULL DEFAULT 1.0,
+  note text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.expenses (
+  id text PRIMARY KEY,  -- 프론트에서 uid()로 생성해 넣음
+  date date NOT NULL,
+  site_id uuid NOT NULL REFERENCES public.sites(id) ON DELETE CASCADE,
+  worker_name text,
+  category text,
+  amount int4 NOT NULL DEFAULT 0,
+  vendor text,
+  address text,
+  memo text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- Storage 버킷 생성 (영수증 파일용)
+INSERT INTO storage.buckets (id, name, public)
+VALUES (gen_random_uuid(), 'receipts', true)
+ON CONFLICT (name) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS public.receipts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  expense_id text NOT NULL REFERENCES public.expenses(id) ON DELETE CASCADE,
+  file_name text,
+  file_url text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- 2) 스키마 교정(이미 존재하는 컬럼/제약을 안전하게 수정)
+DO $$
+DECLARE
+  _has boolean;
+BEGIN
+  -- (A) sites.companyname -> company_name 으로 표준화
+  SELECT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='sites' AND column_name='companyname'
+  ) INTO _has;
+  IF _has THEN
+    BEGIN
+      ALTER TABLE public.sites RENAME COLUMN companyname TO company_name;
+    EXCEPTION WHEN OTHERS THEN NULL;
+    END;
+  END IF;
+
+  -- (B) company_name 컬럼이 없으면 추가
+  SELECT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='sites' AND column_name='company_name'
+  ) INTO _has;
+  IF NOT _has THEN
+    ALTER TABLE public.sites ADD COLUMN company_name text;
+  END IF;
+
+  -- (C) company_name NOT NULL 제약 해제
+  BEGIN
+    ALTER TABLE public.sites ALTER COLUMN company_name DROP NOT NULL;
+  EXCEPTION WHEN OTHERS THEN NULL; END;
+
+  -- (D) NULL 값 보정
+  UPDATE public.sites SET company_name = COALESCE(company_name, '');
+
+  -- expenses.id 타입 교정
+  SELECT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='expenses'
+      AND column_name='id' AND data_type='uuid'
+  ) INTO _has;
+  IF _has THEN
+    BEGIN
+      ALTER TABLE IF EXISTS public.receipts
+        DROP CONSTRAINT IF EXISTS receipts_expense_id_fkey;
+    EXCEPTION WHEN OTHERS THEN NULL; END;
+
+    ALTER TABLE public.expenses
+      ALTER COLUMN id TYPE text USING id::text;
+    ALTER TABLE public.expenses ALTER COLUMN id DROP DEFAULT;
+
+    ALTER TABLE IF EXISTS public.receipts
+      ADD CONSTRAINT receipts_expense_id_fkey
+      FOREIGN KEY (expense_id) REFERENCES public.expenses(id) ON DELETE CASCADE;
+  END IF;
+
+  -- expenses.id 기본값 제거
+  SELECT EXISTS (
+    SELECT 1
+    FROM pg_attrdef d
+    JOIN pg_class c ON c.oid = d.adrelid
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = d.adnum
+    WHERE n.nspname='public' AND c.relname='expenses' AND a.attname='id'
+      AND pg_get_expr(d.adbin, d.adrelid) LIKE '%gen_random_uuid%'
+  ) INTO _has;
+  IF _has THEN
+    ALTER TABLE public.expenses ALTER COLUMN id DROP DEFAULT;
+  END IF;
+
+  -- receipts.expense_id 타입 교정
+  SELECT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='receipts'
+      AND column_name='expense_id' AND data_type='uuid'
+  ) INTO _has;
+  IF _has THEN
+    ALTER TABLE public.receipts DROP CONSTRAINT IF EXISTS receipts_expense_id_fkey;
+    ALTER TABLE public.receipts
+      ALTER COLUMN expense_id TYPE text USING expense_id::text;
+    ALTER TABLE public.receipts
+      ADD CONSTRAINT receipts_expense_id_fkey
+      FOREIGN KEY (expense_id) REFERENCES public.expenses(id) ON DELETE CASCADE;
+  END IF;
+
+  -- receipts.data 컬럼 제거
+  SELECT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='receipts' AND column_name='data'
+  ) INTO _has;
+  IF _has THEN
+    ALTER TABLE public.receipts DROP COLUMN data;
+  END IF;
+
+  -- receipts.file_url 컬럼 추가
+  SELECT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='receipts' AND column_name='file_url'
+  ) INTO _has;
+  IF NOT _has THEN
+    ALTER TABLE public.receipts ADD COLUMN file_url text;
+  END IF;
+
+  -- work_logs.id 타입 교정
+  SELECT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='work_logs'
+      AND column_name='id' AND data_type <> 'text'
+  ) INTO _has;
+  IF _has THEN
+    ALTER TABLE public.work_logs
+      ALTER COLUMN id TYPE text USING id::text;
+  END IF;
+
+  -- sites.id / workers.id 타입 교정
+  SELECT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='sites'
+      AND column_name='id' AND data_type <> 'uuid'
+  ) INTO _has;
+  IF _has THEN
+    ALTER TABLE public.sites ALTER COLUMN id TYPE uuid USING id::uuid;
+  END IF;
+
+  SELECT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='workers'
+      AND column_name='id' AND data_type <> 'uuid'
+  ) INTO _has;
+  IF _has THEN
+    ALTER TABLE public.workers ALTER COLUMN id TYPE uuid USING id::uuid;
+  END IF;
+
+  -- FK 재확인
+  BEGIN
+    ALTER TABLE IF EXISTS public.work_logs DROP CONSTRAINT IF EXISTS work_logs_site_id_fkey;
+  EXCEPTION WHEN OTHERS THEN NULL; END;
+  ALTER TABLE public.work_logs
+    ADD CONSTRAINT work_logs_site_id_fkey
+    FOREIGN KEY (site_id) REFERENCES public.sites(id) ON DELETE CASCADE;
+
+  BEGIN
+    ALTER TABLE IF EXISTS public.work_logs DROP CONSTRAINT IF EXISTS work_logs_worker_id_fkey;
+  EXCEPTION WHEN OTHERS THEN NULL; END;
+  ALTER TABLE public.work_logs
+    ADD CONSTRAINT work_logs_worker_id_fkey
+    FOREIGN KEY (worker_id) REFERENCES public.workers(id) ON DELETE CASCADE;
+END$$;
+
+-- 3) 인덱스
+CREATE INDEX IF NOT EXISTS idx_work_logs_date   ON public.work_logs(date);
+CREATE INDEX IF NOT EXISTS idx_work_logs_site   ON public.work_logs(site_id);
+CREATE INDEX IF NOT EXISTS idx_work_logs_worker ON public.work_logs(worker_id);
+CREATE INDEX IF NOT EXISTS idx_expenses_date    ON public.expenses(date);
+CREATE INDEX IF NOT EXISTS idx_expenses_site    ON public.expenses(site_id);
+
+-- 4) RLS 활성화
+ALTER TABLE public.workers   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.sites     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.work_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.expenses  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.receipts  ENABLE ROW LEVEL SECURITY;
+
+-- 5) 정책 생성
+DO $$
+BEGIN
+  -- workers
+  BEGIN
+    CREATE POLICY all_select ON public.workers FOR SELECT TO anon, authenticated USING (true);
+  EXCEPTION WHEN OTHERS THEN NULL; END;
+  BEGIN
+    CREATE POLICY all_insert ON public.workers FOR INSERT TO anon, authenticated WITH CHECK (true);
+  EXCEPTION WHEN OTHERS THEN NULL; END;
+  BEGIN
+    CREATE POLICY all_update ON public.workers FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
+  EXCEPTION WHEN OTHERS THEN NULL; END;
+  BEGIN
+    CREATE POLICY all_delete ON public.workers FOR DELETE TO anon, authenticated USING (true);
+  EXCEPTION WHEN OTHERS THEN NULL; END;
+
+  -- sites
+  BEGIN
+    CREATE POLICY all_select ON public.sites FOR SELECT TO anon, authenticated USING (true);
+  EXCEPTION WHEN OTHERS THEN NULL; END;
+  BEGIN
+    CREATE POLICY all_insert ON public.sites FOR INSERT TO anon, authenticated WITH CHECK (true);
+  EXCEPTION WHEN OTHERS THEN NULL; END;
+  BEGIN
+    CREATE POLICY all_update ON public.sites FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
+  EXCEPTION WHEN OTHERS THEN NULL; END;
+  BEGIN
+    CREATE POLICY all_delete ON public.sites FOR DELETE TO anon, authenticated USING (true);
+  EXCEPTION WHEN OTHERS THEN NULL; END;
+
+  -- work_logs
+  BEGIN
+    CREATE POLICY all_select ON public.work_logs FOR SELECT TO anon, authenticated USING (true);
+  EXCEPTION WHEN OTHERS THEN NULL; END;
+  BEGIN
+    CREATE POLICY all_insert ON public.work_logs FOR INSERT TO anon, authenticated WITH CHECK (true);
+  EXCEPTION WHEN OTHERS THEN NULL; END;
+  BEGIN
+    CREATE POLICY all_update ON public.work_logs FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
+  EXCEPTION WHEN OTHERS THEN NULL; END;
+  BEGIN
+    CREATE POLICY all_delete ON public.work_logs FOR DELETE TO anon, authenticated USING (true);
+  EXCEPTION WHEN OTHERS THEN NULL; END;
+
+  -- expenses
+  BEGIN
+    CREATE POLICY all_select ON public.expenses FOR SELECT TO anon, authenticated USING (true);
+  EXCEPTION WHEN OTHERS THEN NULL; END;
+  BEGIN
+    CREATE POLICY all_insert ON public.expenses FOR INSERT TO anon, authenticated WITH CHECK (true);
+  EXCEPTION WHEN OTHERS THEN NULL; END;
+  BEGIN
+    CREATE POLICY all_update ON public.expenses FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
+  EXCEPTION WHEN OTHERS THEN NULL; END;
+  BEGIN
+    CREATE POLICY all_delete ON public.expenses FOR DELETE TO anon, authenticated USING (true);
+  EXCEPTION WHEN OTHERS THEN NULL; END;
+
+  -- receipts
+  BEGIN
+    CREATE POLICY all_select ON public.receipts FOR SELECT TO anon, authenticated USING (true);
+  EXCEPTION WHEN OTHERS THEN NULL; END;
+  BEGIN
+    CREATE POLICY all_insert ON public.receipts FOR INSERT TO anon, authenticated WITH CHECK (true);
+  EXCEPTION WHEN OTHERS THEN NULL; END;
+  BEGIN
+    CREATE POLICY all_delete ON public.receipts FOR DELETE TO anon, authenticated USING (true);
+  EXCEPTION WHEN OTHERS THEN NULL; END;
+END
+$$;
+
+-- 6) 샘플 데이터 (선택사항)
+-- INSERT INTO public.workers (name, daily) VALUES 
+--   ('김작업', 150000),
+--   ('이작업', 140000),
+--   ('박작업', 160000);
+
+-- INSERT INTO public.sites (company_name, name, budget) VALUES 
+--   ('이노프NC', '서울시 강남구 현장', 50000000),
+--   ('이노프NC', '서울시 서초구 현장', 30000000);

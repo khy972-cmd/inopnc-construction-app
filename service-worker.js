@@ -1,5 +1,5 @@
 /* INOPNC PWA Service Worker */
-const CACHE_VERSION = 'inopnc-pwa-20250127_001';
+const CACHE_VERSION = 'inopnc-pwa-20250127_002';
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
 
