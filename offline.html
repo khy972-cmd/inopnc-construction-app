@@ -1,27 +1,67 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>오프라인입니다 · INOPNC</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>오프라인 - INOPNC</title>
   <style>
-    :root{--p:#0068FE;--t:#111827;--g:#6b7280;background:#f6f8fb;color:var(--t);}
-    body{margin:0;display:grid;min-height:100vh;place-items:center;font-family:system-ui,-apple-system,Segoe UI,Inter,Arial;}
-    .card{max-width:520px;background:white;padding:24px;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.08);border:1px solid #e5e7eb}
-    h1{margin:0 0 8px;font-size:22px}
-    p{margin:0 0 14px;color:var(--g);line-height:1.6}
-    .btn{display:inline-block;padding:10px 14px;border-radius:10px;border:1px solid #e5e7eb;background:#fff;font-weight:700;text-decoration:none;color:#111827}
-    .btn.primary{background:var(--p);color:#fff;border-color:var(--p)}
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f6f8fb;
+      color: #111827;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .offline-container {
+      text-align: center;
+      max-width: 400px;
+      padding: 40px 20px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    }
+    .icon {
+      font-size: 64px;
+      color: #0068FE;
+      margin-bottom: 20px;
+    }
+    h1 {
+      color: #111827;
+      margin: 0 0 16px 0;
+      font-size: 24px;
+      font-weight: 700;
+    }
+    p {
+      color: #6b7280;
+      margin: 0 0 24px 0;
+      line-height: 1.6;
+    }
+    .btn {
+      background: #0068FE;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn:hover {
+      background: #0056cc;
+    }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>오프라인 상태입니다</h1>
-    <p>네트워크 연결을 확인한 뒤 다시 시도해주세요. 설치된 앱에서는 최근에 방문한 화면 일부를 사용할 수 있습니다.</p>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <a class="btn" href="/" rel="nofollow">홈으로</a>
-      <a class="btn primary" href="javascript:location.reload()">새로고침</a>
-    </div>
+  <div class="offline-container">
+    <div class="icon">📶</div>
+    <h1>인터넷 연결 없음</h1>
+    <p>현재 오프라인 상태입니다. 인터넷 연결을 확인하고 다시 시도해주세요.</p>
+    <button class="btn" onclick="window.location.reload()">다시 시도</button>
   </div>
 </body>
 </html>

@@ -1,21 +1,37 @@
 /* INOPNC PWA Service Worker */
-const CACHE_VERSION = 'inopnc-pwa-20250819_0214';
+const CACHE_VERSION = 'inopnc-pwa-20250127_001';
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
 
 const PRECACHE_URLS = [
   '/',                 // 루트
-  '/index.html',       // SPA 엔트리 (서버 설정에 따라 무시될 수 있음)
+  '/index.html',       // SPA 엔트리
   '/offline.html',
   '/manifest.webmanifest',
   '/icon-192x192.png',
   '/icon-512x512.png'
 ];
 
+// 외부 CDN 리소스
+const EXTERNAL_RESOURCES = [
+  'https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800;900&family=Inter:wght@400;600;700&display=swap',
+  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css',
+  'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js'
+];
+
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(STATIC_CACHE);
     await cache.addAll(PRECACHE_URLS);
+    
+    // 외부 리소스도 프리캐시
+    try {
+      await cache.addAll(EXTERNAL_RESOURCES);
+    } catch (err) {
+      console.log('Some external resources failed to cache:', err);
+    }
+    
     self.skipWaiting();
   })());
 });
@@ -97,3 +113,15 @@ self.addEventListener('message', (event) => {
     self.skipWaiting();
   }
 });
+
+// 백그라운드 동기화 (선택적)
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'background-sync') {
+    event.waitUntil(doBackgroundSync());
+  }
+});
+
+async function doBackgroundSync() {
+  // 백그라운드에서 데이터 동기화 로직
+  console.log('Background sync triggered');
+}
