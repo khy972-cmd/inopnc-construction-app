@@ -61,27 +61,28 @@
   /* 헤더 */
   header{position:sticky;top:0;z-index:10;background:#fff;color:#1A254F; transition: background-color 0.3s, color 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.1);}
   [data-theme="dark"] header { background: #1e3a5f; color: #f0f4ff; }
-  .header-inner{max-width:1100px;margin:0 auto;padding:var(--space);display:flex;align-items:center;gap:10px;justify-content:space-between}
-  .brand{font-family:Poppins;font-weight:900;font-size:24px;letter-spacing:.2px;color:var(--t); transition: color 0.3s;}
+  .header-inner{max-width:1100px;margin:0 auto;padding:var(--space);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px}
+  .header-left{display:flex;justify-content:flex-start;align-items:center}
+  .header-center{display:flex;justify-content:center;align-items:center}
+  .header-right{display:flex;justify-content:flex-end;align-items:center;gap:10px}
+  .brand{font-family:Poppins;font-weight:900;font-size:26px;letter-spacing:.2px;color:var(--t); transition: color 0.3s; text-align:center;}
 
-  /* 테마 토글 버튼 */
-  .theme-toggle { 
-    background: none; 
-    border: none; 
-    color: var(--t); 
-    cursor: pointer; 
-    font-size: 20px; 
-    padding: 5px; 
-    border-radius: 50%; 
-    transition: all 0.3s ease;
-    position: relative;
+  /* 좁은 버튼 */
+  .btn-narrow{min-width:auto;width:28px;height:24px;padding:0;justify-content:center;}
+
+  /* 테마 토글 스위치 */
+  .theme-toggle-container{position:relative;display:inline-block}
+  .theme-toggle-input{opacity:0;width:0;height:0}
+  .theme-toggle-label{
+    display:inline-block;width:44px;height:24px;background:#ccc;border-radius:12px;cursor:pointer;position:relative;transition:all 0.3s ease;
   }
-  .theme-toggle:hover { 
-    background-color: rgba(0, 0, 0, 0.1);
+  .theme-toggle-label:before{
+    content:'';position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:3px;left:3px;transition:all 0.3s ease;box-shadow:0 2px 4px rgba(0,0,0,0.2);
   }
-  [data-theme="dark"] .theme-toggle:hover { 
-    background-color: rgba(255, 255, 255, 0.1);
-  }
+  .theme-toggle-input:checked + .theme-toggle-label{background:var(--p)}
+  .theme-toggle-input:checked + .theme-toggle-label:before{transform:translateX(20px)}
+  [data-theme="dark"] .theme-toggle-label{background:#4a5568}
+  [data-theme="dark"] .theme-toggle-input:checked + .theme-toggle-label{background:var(--p)}
 
   /* 공통 */
   .number{font-family:Inter;font-weight:800}
@@ -154,14 +155,23 @@
 
   /* 캘린더 */
   .calbar{display:grid;grid-template-columns:1fr 1fr;gap:var(--space);align-items:end}
-  .cal-head{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
-  .calendar{display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:min-content;gap:6px}
-  .cell{border:1px solid var(--b);border-radius:10px;padding:6px;background:#fff;display:flex;flex-direction:column;cursor:pointer;transition: all 0.3s ease;position: relative;}
-  .cell:hover{background: rgba(0, 104, 254, 0.1);}
-  [data-theme="dark"] .cell { background:#1e3a5f; border-color:#2d5a8b }
-  .date{font-size:12px;font-weight:900}
-  .pill{margin-top:4px;padding:4px 6px;border-radius:8px;background:#eef3ff;border:1px dashed #9bbdff;font-size:12px;overflow:visible;display:block;white-space:normal;word-break:break-word;transition: all 0.3s ease;}
-  [data-theme="dark"] .pill { background:#1e3a5f; border-color:#2d5a8b }
+  .cal-head{display:grid;grid-template-columns:repeat(7,1fr);gap:0;border-bottom:1px solid var(--b);background:#fff;padding:8px 0}
+  .calendar{display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:min-content;gap:0;background:#fff}
+  .cell{border-right:1px solid var(--b);border-bottom:1px solid var(--b);padding:8px;background:#fff;display:flex;flex-direction:column;cursor:pointer;transition: all 0.3s ease;position: relative;min-height:80px;overflow:visible;border-radius:0}
+  .cell:nth-child(7n){border-right:none}
+  .cell:hover{background: rgba(0, 104, 254, 0.05);}
+  [data-theme="dark"] .cal-head { background:#142f4b; border-color:var(--b) }
+  [data-theme="dark"] .calendar { background:#142f4b; border-color:var(--b) }
+  [data-theme="dark"] .cell { background:#142f4b; border-color:var(--b) }
+  .date{font-size:12px;font-weight:900;margin-bottom:4px}
+  .pill{margin-top:2px;padding:2px 4px;font-size:11px;overflow:visible;display:block;white-space:normal;word-break:break-word;transition: all 0.3s ease;line-height:1.2;}
+  .pill.site{color:var(--p);font-weight:600}
+  .pill.worker{color:var(--t);font-weight:400}
+  .pill.worker .md{font-weight:700;color:var(--t)}
+  .pill.worker .md.zero{color:#dc2626;font-weight:700}
+  
+  /* 작업모달 공수 입력 필드 스타일 */
+  .log-2row .md.zero{color:#dc2626;font-weight:700}
   .mini{font-size:var(--fz-small);color:var(--g)}
 
   /* 모달 */
@@ -182,6 +192,14 @@
 
   /* 작업로그 연동 필터 */
   .log-filter{display:grid;grid-template-columns:1fr 1fr;gap:var(--space);align-items:end}
+
+  /* 아코디언 스타일 */
+  .accordion-header{user-select:none;cursor:pointer;transition:all 0.3s ease}
+  .accordion-header:hover{background:rgba(0,104,254,0.05)}
+  .accordion-content{background:#fff;transition:all 0.3s ease;display:none}
+  .accordion.active .accordion-header i{transform:rotate(180deg)}
+  .accordion.active .accordion-content{display:block}
+  [data-theme="dark"] .accordion-content{background:#142f4b}
 
   /* 금전출납부 */
   .ledger-container{display:flex;flex-direction:column;gap:12px}
@@ -218,20 +236,22 @@
   [data-theme="dark"] .bottom-nav { background:#1e3a5f; box-shadow:0 -4px 12px rgba(0,0,0,0.5) }
   .nav-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;color:#fff;cursor:pointer;border:none;background:transparent;transition: all 0.3s; border-radius:0 !important;position: relative;}
   .nav-btn i{font-size:20px;margin-bottom:4px;transition: transform 0.3s ease;}
-  .nav-btn span{font-size:10px;font-weight:600;transition: all 0.3s ease;}
+  .nav-btn span{font-size:9px;font-weight:400;transition: all 0.3s ease;font-family:Inter,sans-serif;letter-spacing:0.2px;}
   .nav-btn.active{background:#ffffff22;}
   .nav-btn:hover{background:#ffffff33;}
   .nav-btn.active:hover{background:#ffffff44;}
 
   /* 아코디언 */
   .accordion{border:1px solid var(--b);border-radius:10px;margin-bottom:10px;overflow:hidden;transition: all 0.3s ease;}
-  .accordion-header{background:#f8fafc;padding:12px 16px;font-weight:800;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition: all 0.3s ease;}
+  .accordion-header{background:#f8fafc;padding:12px 16px;font-weight:800;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition: all 0.3s ease;user-select:none;}
   [data-theme="dark"] .accordion-header { background:#1e3a5f; color:#f0f4ff }
-  .accordion-content{display:none;padding:16px;transition: all 0.3s ease;}
+  .accordion-content{display:none;padding:16px;transition: all 0.3s ease;background:#fff;}
   [data-theme="dark"] .accordion-content { background:#142f4b; color:#f0f4ff }
   .accordion.active .accordion-content{display:block;animation: slideDown 0.3s ease;}
   .accordion.active .accordion-header i{transform:rotate(180deg)}
-  .accordion-header i{transition:transform .3s}
+  .accordion-header i{transition:transform .3s;color:var(--g)}
+  .accordion-header:hover{background:#f1f5f9}
+  [data-theme="dark"] .accordion-header:hover{background:#2d5a8b}
 
   /* 총계행 - 다크모드 최적화 */
   .totals-row{font-weight:800;background:#f0f9ff;animation: highlightRow 0.5s ease;}
@@ -327,19 +347,26 @@
     .admin-table{min-width:0}
     .admin-table th,.admin-table td{padding:4px}
     .admin-table .wName,.admin-table .sName{min-width:100px}
+    .header-inner{padding:12px;gap:8px}
+    .brand{font-size:24px}
+    .btn-narrow{width:26px;height:24px}
   }
   @media (max-width: 480px) {
     .btn{min-width:60px}
     input,select,textarea{padding:8px}
     .admin-table th{font-size:11px}
     .admin-table th,.admin-table td{padding:3px}
-    .header-inner{padding:12px;gap:8px}
-    .brand{font-size:20px}
+    .header-inner{padding:10px;gap:6px}
+    .brand{font-size:22px}
     .calbar{grid-template-columns:1fr;gap:8px}
+    .btn-narrow{width:24px;height:24px}
   }
   @media (max-width: 360px) {
     .admin-table{min-width:0}
     .admin-table .btn{padding:4px 8px}
+    .header-inner{padding:8px;gap:4px}
+    .brand{font-size:20px}
+    .btn-narrow{width:22px;height:24px}
   }
   </style>
 </head>
@@ -352,19 +379,22 @@
 
   <header>
     <div class="header-inner">
-      <div style="display:flex; gap:10px; align-items:center;">
-        <button class="btn" id="btnBack" title="뒤로가기">
+      <div class="header-left">
+        <button class="btn btn-narrow" id="btnBack" title="뒤로가기">
           <i class="fas fa-arrow-left"></i>
         </button>
+      </div>
+      <div class="header-center">
         <div class="brand">INOPNC</div>
       </div>
-      <div style="display:flex; gap:10px; align-items:center;">
-        <button class="btn" id="btnRefresh" title="새로고침">
+      <div class="header-right">
+        <button class="btn btn-narrow" id="btnRefresh" title="새로고침">
           <i class="fas fa-sync-alt"></i>
         </button>
-        <button class="theme-toggle" id="themeToggle" aria-label="테마 전환">
-          <i class="fas fa-sun" id="themeIcon"></i>
-        </button>
+        <div class="theme-toggle-container">
+          <input type="checkbox" id="themeToggle" class="theme-toggle-input">
+          <label for="themeToggle" class="theme-toggle-label"></label>
+        </div>
         <!-- PWA 앱 설치 버튼 -->
         <button class="btn" id="installAppBtn" style="display:none;">
           <i class="fas fa-download"></i> 앱 설치
@@ -411,32 +441,41 @@
     </div>
 
     <div class="card" style="margin-top:var(--lg);">
-      <h2 style="margin:0 0 var(--space); font-size:var(--fz-h2); color:var(--g); font-weight:800">출력현황</h2>
-      <div class="row" style="align-items:end">
-        <div class="mini">작업자 미선택 시 해당 월 전체 표시</div>
-        <div style="flex:1 1 auto"></div>
-        <button class="btn primary" id="btnExportHome">
-          <i class="fas fa-file-excel"></i> 출력 엑셀 내보내기
-        </button>
-      </div>
-      <div class="table-scroll" style="margin-top:10px">
-        <table class="table" id="homeListTable">
-          <thead>
-            <tr>
-              <th>작업자</th><th>일자</th><th>현장</th><th>공수</th><th>총급여</th><th>세금(3.3%)</th><th>실수령액</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-          <tfoot>
-            <tr class="totals-row">
-              <td colspan="3">합계</td>
-              <td id="totalHours" class="number">0</td>
-              <td id="totalSalary" class="number">0원</td>
-              <td id="totalTax" class="number text-red">0원</td>
-              <td id="totalNet" class="number">0원</td>
-            </tr>
-          </tfoot>
-        </table>
+      <div class="accordion">
+        <div class="accordion-header">
+          <h2 style="margin:0; font-size:var(--fz-h2); color:var(--g); font-weight:800">
+            출력현황
+          </h2>
+          <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="accordion-content">
+          <div class="row" style="align-items:end">
+            <div class="mini">작업자 미선택 시 해당 월 전체 표시</div>
+            <div style="flex:1 1 auto"></div>
+            <button class="btn primary" id="btnExportHome">
+              <i class="fas fa-file-excel"></i> 출력 엑셀 내보내기
+            </button>
+          </div>
+          <div class="table-scroll" style="margin-top:10px">
+            <table class="table" id="homeListTable">
+              <thead>
+                <tr>
+                  <th>작업자</th><th>일자</th><th>현장</th><th>공수</th><th>총급여</th><th>세금(3.3%)</th><th>실수령액</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+              <tfoot>
+                <tr class="totals-row">
+                  <td colspan="3">합계</td>
+                  <td id="totalHours" class="number">0</td>
+                  <td id="totalSalary" class="number">0원</td>
+                  <td id="totalTax" class="number text-red">0원</td>
+                  <td id="totalNet" class="number">0원</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   </template>
@@ -518,50 +557,64 @@
         </div>
 
         <div class="ledger-section">
-          <div style="font-weight:900;margin-bottom:8px">
-            인건비 현황
-          </div>
-          <div class="table-scroll">
-            <table class="table" id="laborTable">
-              <thead>
-                <tr>
-                  <th>작업자</th><th>일자</th><th>현장</th><th>공수</th><th>총급여</th><th>세금(3.3%)</th><th>실수령액</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-              <tfoot>
-                <tr class="totals-row">
-                  <td colspan="3">합계</td>
-                  <td id="laborTotalHours" class="number">0</td>
-                  <td id="laborTotalSalary" class="number">0원</td>
-                  <td id="laborTotalTax" class="number text-red">0원</td>
-                  <td id="laborTotalNet" class="number">0원</td>
-                </tr>
-              </tfoot>
-            </table>
+          <div class="accordion">
+            <div class="accordion-header">
+              <div style="font-weight:900;margin:0">
+                인건비 현황
+              </div>
+              <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="accordion-content">
+              <div class="table-scroll">
+                <table class="table" id="laborTable">
+                  <thead>
+                    <tr>
+                      <th>작업자</th><th>일자</th><th>현장</th><th>공수</th><th>총급여</th><th>세금(3.3%)</th><th>실수령액</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                  <tfoot>
+                    <tr class="totals-row">
+                      <td colspan="3">합계</td>
+                      <td id="laborTotalHours" class="number">0</td>
+                      <td id="laborTotalSalary" class="number">0원</td>
+                      <td id="laborTotalTax" class="number text-red">0원</td>
+                      <td id="laborTotalNet" class="number">0원</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
 
         <div class="ledger-section">
-          <div style="font-weight:900;margin-bottom:8px">
-            경비 현황
-          </div>
-          <div class="table-scroll">
-            <table class="table" id="expenseTable">
-              <thead>
-                <tr>
-                  <th>사용일</th><th>작업자</th><th>항목</th><th>금액</th><th>사용처</th><th>주소</th><th>메모</th><th>삭제</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-              <tfoot>
-                <tr class="totals-row">
-                  <td colspan="3">합계</td>
-                  <td id="expenseTotalAmount" class="number">0원</td>
-                  <td colspan="4"></td>
-                </tr>
-              </tfoot>
-            </table>
+          <div class="accordion">
+            <div class="accordion-header">
+              <div style="font-weight:900;margin:0">
+                경비 현황
+              </div>
+              <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="accordion-content">
+              <div class="table-scroll">
+                <table class="table" id="expenseTable">
+                  <thead>
+                    <tr>
+                      <th>사용일</th><th>작업자</th><th>항목</th><th>금액</th><th>사용처</th><th>주소</th><th>메모</th><th>삭제</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                  <tfoot>
+                    <tr class="totals-row">
+                      <td colspan="3">합계</td>
+                      <td id="expenseTotalAmount" class="number">0원</td>
+                      <td colspan="4"></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -621,28 +674,31 @@
         </div>
       </div>
 
-      <div class="card" style="margin-top: var(--space)">
-        <div style="font-weight:900;margin-bottom:8px">
-          인건비 현황
+      <div class="accordion" style="margin-top: var(--space)">
+        <div class="accordion-header" style="font-weight:900;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:12px;background:#f8f9fa;border-radius:8px;transition:all 0.3s ease">
+          <span>인건비 현황</span>
+          <i class="fas fa-chevron-down" style="transition:transform 0.3s ease"></i>
         </div>
-        <div class="table-scroll">
-          <table class="table" id="payWorkerTable">
-            <thead>
-              <tr>
-                <th>작업자</th><th>일자</th><th>현장</th><th>공수</th><th>총급여</th><th>세금(3.3%)</th><th>실수령액</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-            <tfoot>
-              <tr class="totals-row">
-                <td colspan="3">합계</td>
-                <td id="payTotalHours" class="number">0</td>
-                <td id="payTotalSalary" class="number">0원</td>
-                <td id="payTotalTax" class="number text-red">0원</td>
-                <td id="payTotalNet" class="number">0원</td>
-              </tr>
-            </tfoot>
-          </table>
+        <div class="accordion-content" style="padding:12px 0">
+          <div class="table-scroll">
+            <table class="table" id="payWorkerTable">
+              <thead>
+                <tr>
+                  <th>작업자</th><th>년-월</th><th>현장</th><th>공수</th><th>총급여</th><th>세금(3.3%)</th><th>실수령액</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+              <tfoot>
+                <tr class="totals-row">
+                  <td colspan="3">합계</td>
+                  <td id="payTotalHours" class="number">0</td>
+                  <td id="payTotalSalary" class="number">0원</td>
+                  <td id="payTotalTax" class="number text-red">0원</td>
+                  <td id="payTotalNet" class="number">0원</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -654,7 +710,7 @@
           <table class="table" id="siteFinanceTable">
             <thead>
               <tr>
-                <th>년-월</th><th>현장</th><th>총 예산</th><th>인건비(총급여)</th><th>경비지출</th><th>순이익</th>
+                <th>년-월(누적)</th><th>현장</th><th>총 예산</th><th>인건비(총급여)</th><th>경비지출</th><th>순이익</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -796,6 +852,115 @@
   }
 
   /* ===== 집계 함수 (중복 제거) ===== */
+  function computeProfitLaborRows(siteId, month, homeSiteId=null){
+    const [Y, M] = month ? month.split('-').map(Number) : [null, null];
+    const inMonth = d => {
+      if (!month) return true;
+      const dt = new Date(d);
+      return dt.getFullYear() === Y && dt.getMonth() + 1 === M;
+    };
+
+    const siteFilter = siteId || homeSiteId;
+    const logs = (siteFilter ? db.workLogs.filter(r=>r.site_id===siteFilter) : db.workLogs)
+                  .filter(r=> inMonth(r.date))
+                  .sort((a,b)=> a.date.localeCompare(b.date));
+
+    // 년-월별로 그룹화하여 누적 계산
+    const groupedByMonth = {};
+    logs.forEach(log => {
+      const monthKey = log.date.substring(0, 7); // YYYY-MM
+      if (!groupedByMonth[monthKey]) {
+        groupedByMonth[monthKey] = [];
+      }
+      groupedByMonth[monthKey].push(log);
+    });
+
+    const rows = [];
+    Object.keys(groupedByMonth).sort().forEach(monthKey => {
+      const monthLogs = groupedByMonth[monthKey];
+      const workerGroups = {};
+      
+      // 작업자별로 그룹화
+      monthLogs.forEach(log => {
+        const workerId = log.worker_id;
+        if (!workerGroups[workerId]) {
+          workerGroups[workerId] = {
+            worker_id: workerId,
+            site_id: log.site_id,
+            month: monthKey,
+            totalMd: 0,
+            totalSalary: 0,
+            totalTax: 0,
+            totalNet: 0
+          };
+        }
+        
+        const w = workerById(workerId) || {};
+        const salary = (log.md || 0) * (w.daily || 0);
+        const tax = Math.round(salary * 0.033);
+        const net = salary - tax;
+        
+        workerGroups[workerId].totalMd += log.md || 0;
+        workerGroups[workerId].totalSalary += salary;
+        workerGroups[workerId].totalTax += tax;
+        workerGroups[workerId].totalNet += net;
+      });
+
+      // 누적 데이터를 행으로 변환
+      Object.values(workerGroups).forEach(group => {
+        const w = workerById(group.worker_id) || {};
+        rows.push({
+          worker: w.name || '(미등록)',
+          month: group.month,
+          site: siteName(group.site_id),
+          md: group.totalMd,
+          salary: KR(group.totalSalary) + '원',
+          tax: '-' + KR(group.totalTax) + '원',
+          net: KR(group.totalNet) + '원',
+          worker_id: group.worker_id
+        });
+      });
+    });
+
+    return rows;
+  }
+
+  function renderProfitLaborTable(table, rows){
+    const tbody = table.querySelector('tbody');
+    tbody.innerHTML = '';
+    
+    let totalHours = 0, totalSalary = 0, totalTax = 0, totalNet = 0;
+    
+    rows.forEach(row => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${row.worker}</td>
+        <td>${row.month}</td>
+        <td>${row.site}</td>
+        <td>${row.md}</td>
+        <td>${row.salary}</td>
+        <td class="text-red">${row.tax}</td>
+        <td>${row.net}</td>
+      `;
+      tbody.appendChild(tr);
+      
+      totalHours += row.md;
+      totalSalary += parseInt(row.salary.replace(/[^\d]/g, ''));
+      totalTax += parseInt(row.tax.replace(/[^\d]/g, ''));
+      totalNet += parseInt(row.net.replace(/[^\d]/g, ''));
+    });
+    
+    // 합계 업데이트
+    const set = (id, val) => { 
+      const el = table.querySelector('#' + id); 
+      if(el) el.textContent = val; 
+    };
+    set('payTotalHours', totalHours);
+    set('payTotalSalary', KR(totalSalary) + '원');
+    set('payTotalTax', '-' + KR(totalTax) + '원');
+    set('payTotalNet', KR(totalNet) + '원');
+  }
+
   function computeLaborRows(siteId, month, homeSiteId=null){
     const [Y, M] = month ? month.split('-').map(Number) : [null, null];
     const inMonth = d => {
@@ -903,6 +1068,9 @@
     const rerender = () => { renderCal(); renderHomeList(); };
     mp.onchange = rerender; workerSel.onchange = rerender;
     renderCal(); renderHomeList();
+    
+    // 아코디언 초기화
+    document.querySelectorAll('.accordion-header').forEach(h=> h.addEventListener('click', ()=> h.parentElement.classList.toggle('active')));
   }
   function renderCal(){
     const cal = document.getElementById('calendar');
@@ -926,24 +1094,31 @@
 
       const logs = db.workLogs.filter(w=>w.date===iso);
       if (logs.length){
-        logs.slice(0,2).forEach(l=>{
-          const p = document.createElement('div');
-          p.className='pill';
-          const base = (workerById(l.worker_id)||{}).daily||0;
-          const s4 = siteName(l.site_id).slice(0,4);
-          p.textContent = `${s4}·${workerName(l.worker_id)}·${l.md}·${KR(base)}원`;
-          cell.appendChild(p);
+        // 모든 로그 데이터를 표시 (생략 없음)
+        logs.forEach((log, index) => {
+          // 현장명(4글자)
+          const sitePill = document.createElement('div');
+          sitePill.className='pill site';
+          const s4 = siteName(log.site_id).slice(0,4);
+          sitePill.textContent = s4;
+          cell.appendChild(sitePill);
+          
+          // 작업자명/공수
+          const workerPill = document.createElement('div');
+          workerPill.className='pill worker';
+          const workerName = workerById(log.worker_id)?.name || '';
+          const md = log.md || 0;
+          const mdSpan = document.createElement('span');
+          mdSpan.className = `md ${(md === 0 || md === 0.5) ? 'zero' : ''}`;
+          mdSpan.textContent = md;
+          workerPill.textContent = `${workerName}/`;
+          workerPill.appendChild(mdSpan);
+          cell.appendChild(workerPill);
         });
-        if (logs.length>2){
-          const more=document.createElement('div');
-          more.className='pill';
-          more.textContent = `+${logs.length-2}건`;
-          cell.appendChild(more);
-        }
       } else {
-        const none=document.createElement('div');
-        none.className='mini';
-        none.textContent='기록 없음';
+        const none = document.createElement('div');
+        none.className = 'mini';
+        none.textContent = '기록 없음';
         cell.appendChild(none);
       }
       cell.onclick = () => openLogModal(iso);
@@ -1037,6 +1212,25 @@
         <button class="btn warn del"><i class="fas fa-trash"></i></button>
       </div>
     `;
+    
+    // 공수 입력 필드에 이벤트 리스너 추가
+    const mdInput = div.querySelector('.md');
+    const updateMdColor = () => {
+      const value = parseFloat(mdInput.value) || 0;
+      if (value === 0 || value === 0.5) {
+        mdInput.classList.add('zero');
+      } else {
+        mdInput.classList.remove('zero');
+      }
+    };
+    
+    // 초기 색상 설정
+    updateMdColor();
+    
+    // 입력 시 색상 업데이트
+    mdInput.addEventListener('input', updateMdColor);
+    mdInput.addEventListener('change', updateMdColor);
+    
     div.querySelector('.del').onclick = () => { div.remove(); };
     return div;
   }
@@ -1050,7 +1244,7 @@
       worker_id: row.querySelector('.worker').value,
       md: parseFloat(row.querySelector('.md').value||0),
       note: row.querySelector('.note').value
-    })).filter(r=> r.md>0 && r.site_id && r.worker_id);
+    })).filter(r=> r.md>=0 && r.site_id && r.worker_id);
 
     await supabase.from('work_logs').delete().eq('date', modalDate);
     if (keep.length) await supabase.from('work_logs').insert(keep.map(({id,...rest})=>rest));
@@ -1312,6 +1506,12 @@ document.getElementById('btnExportLedger').onclick = () => {
     document.getElementById('profitMonth').value = fmtYM(new Date());
     ['profitSite','profitMonth'].forEach(id => document.getElementById(id).onchange = renderProfit);
     renderProfit();
+    
+    // 아코디언 초기화
+    document.querySelectorAll('.accordion-header').forEach(h => {
+      h.accordionClickHandler = () => h.parentElement.classList.toggle('active');
+      h.addEventListener('click', h.accordionClickHandler);
+    });
   }
   function renderProfit(){
     const siteId = document.getElementById('profitSite').value;
@@ -1326,8 +1526,13 @@ document.getElementById('btnExportLedger').onclick = () => {
       totalBudget = db.sites.reduce((sum,s)=> sum + (s.budget||0), 0);
     }
 
-    const { totalGross: laborTotalGross } = computeLaborRows(siteId, month, homeSiteId);
     const { total: expenseTotal } = computeExpenseRows(siteId, month, homeSiteId);
+    
+    // 인건비 총액 계산 (년-월 기준 누적)
+    const profitLaborRows = computeProfitLaborRows(siteId, month, homeSiteId);
+    const laborTotalGross = profitLaborRows.reduce((sum, row) => {
+      return sum + parseInt(row.salary.replace(/[^\d]/g, ''));
+    }, 0);
 
     const tbody = document.querySelector('#siteFinanceTable tbody');
     tbody.innerHTML='';
@@ -1374,14 +1579,8 @@ document.getElementById('btnExportLedger').onclick = () => {
     const netEl = document.getElementById('profitCardNetProfit');
     if (netEl){ netEl.textContent = KR(financeTotalProfit)+'원'; netEl.className = `number ${financeTotalProfit>=0?'text-blue':'text-red'}`; }
 
-    const { rows: lRows, totalHours: laborTotalHours, totalTax: laborTotalTax, totalNet: laborTotalNet } = computeLaborRows(siteId, month, homeSiteId);
-    renderLaborTable(document.getElementById('payWorkerTable'), lRows, laborTotalHours, laborTotalGross, laborTotalTax, laborTotalNet, 'pay');
-
-    const set = (id, val) => { const el=document.getElementById('payWorkerTable').querySelector('#'+id); if(el) el.textContent = val; };
-    set('payTotalHours',   laborTotalHours);
-    set('payTotalSalary',  KR(laborTotalGross)+'원');
-    set('payTotalTax',     '-'+KR(laborTotalTax)+'원');
-    set('payTotalNet',     KR(laborTotalNet)+'원');
+    // 년-월 기준 누적 데이터 표시
+    renderProfitLaborTable(document.getElementById('payWorkerTable'), profitLaborRows);
 
     const ftL = document.getElementById('financeTotalLabor');
     const ftE = document.getElementById('financeTotalExpense');
@@ -1389,6 +1588,17 @@ document.getElementById('btnExportLedger').onclick = () => {
     if (ftL) ftL.textContent = KR(laborTotalGross)+'원';
     if (ftE) ftE.textContent = KR(expenseTotal)+'원';
     if (ftP) ftP.textContent = KR(financeTotalProfit)+'원';
+    
+    // 아코디언 초기화 (동적으로 로드된 콘텐츠용)
+    setTimeout(() => {
+      document.querySelectorAll('.accordion-header').forEach(h => {
+        // 기존 이벤트 리스너 제거
+        h.removeEventListener('click', h.accordionClickHandler);
+        // 새로운 이벤트 리스너 추가
+        h.accordionClickHandler = () => h.parentElement.classList.toggle('active');
+        h.addEventListener('click', h.accordionClickHandler);
+      });
+    }, 100);
   }
 
   /* ===== 관리자 ===== */
@@ -1584,20 +1794,19 @@ document.getElementById('btnExportLedger').onclick = () => {
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const theme = savedTheme || (prefersDark ? 'dark' : 'light');
     document.documentElement.setAttribute('data-theme', theme);
-    updateThemeIcon(theme);
+    updateThemeToggle(theme);
   }
-  function updateThemeIcon(theme){
-    const icon = document.getElementById('themeIcon');
-    if (!icon) return;
-    icon.classList.toggle('fa-moon', theme==='dark');
-    icon.classList.toggle('fa-sun', theme!=='dark');
+  function updateThemeToggle(theme){
+    const toggle = document.getElementById('themeToggle');
+    if (!toggle) return;
+    toggle.checked = theme === 'dark';
   }
   function toggleTheme(){
     const cur = document.documentElement.getAttribute('data-theme');
     const next = cur === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem('theme', next);
-    updateThemeIcon(next);
+    updateThemeToggle(next);
   }
 
   /* ===== PWA 앱 설치 기능 ===== */
@@ -1862,7 +2071,7 @@ document.getElementById('btnExportLedger').onclick = () => {
     initTheme();
     initNav();
     initHistory();
-    document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+    document.getElementById('themeToggle').addEventListener('change', toggleTheme);
     
     // 데이터 초기화
     await initializeData();
