@@ -152,6 +152,7 @@
   [data-theme="dark"] .table { color:#f0f4ff }
   [data-theme="dark"] .table th { background:#1e3a5f }
   [data-theme="dark"] .table tbody tr:hover{background: rgba(76, 141, 255, 0.1);}
+  [data-theme="dark"] .table tfoot td{background:#142f4b}
 
   /* 캘린더 */
   .calbar{display:grid;grid-template-columns:1fr 1fr;gap:var(--space);align-items:end}
@@ -194,12 +195,13 @@
   .log-filter{display:grid;grid-template-columns:1fr 1fr;gap:var(--space);align-items:end}
 
   /* 아코디언 스타일 */
-  .accordion-header{user-select:none;cursor:pointer;transition:all 0.3s ease}
+  .accordion-header{user-select:none;cursor:pointer;transition:all 0.3s ease;color:var(--t)}
   .accordion-header:hover{background:rgba(0,104,254,0.05)}
   .accordion-content{background:#fff;transition:all 0.3s ease;display:none}
   .accordion.active .accordion-header i{transform:rotate(180deg)}
   .accordion.active .accordion-content{display:block}
   [data-theme="dark"] .accordion-content{background:#142f4b}
+  [data-theme="dark"] .accordion-header{color:#f0f4ff;background:#1e3a5f}
 
   /* 금전출납부 */
   .ledger-container{display:flex;flex-direction:column;gap:12px}
@@ -208,6 +210,23 @@
 
   /* 수익분석 */
   .profit-filter{display:grid;grid-template-columns:1fr 1fr;gap:var(--space);align-items:end}
+  [data-theme="dark"] .profit-filter label{color:#f0f4ff}
+  
+  /* 수익분석 카드 다크모드 */
+  .profit-card{transition:all 0.3s ease}
+  [data-theme="dark"] .profit-card{background:#142f4b;border-color:#1e3a5f}
+  
+  /* 수익분석 아코디언 헤더 다크모드 */
+  .profit-accordion-header{transition:all 0.3s ease;background:#f8f9fa}
+  [data-theme="dark"] .profit-accordion-header{background:#1e3a5f;color:#f0f4ff}
+  
+  /* 수익분석 제목 다크모드 */
+  .profit-title{transition:color 0.3s ease}
+  [data-theme="dark"] .profit-title{color:#7aa3ff}
+  
+  /* 수익분석 섹션 제목 다크모드 */
+  .profit-section-title{transition:color 0.3s ease}
+  [data-theme="dark"] .profit-section-title{color:#f0f4ff}
 
   /* 관리자설정 */
   .admin-grid{display:grid;grid-template-columns:1fr;gap:16px;max-width:100%}
@@ -647,7 +666,7 @@
   <!-- 수익분석 -->
   <template id="profitTpl">
     <div class="card">
-      <h2 style="margin:0 0 var(--space); font-size:var(--fz-h2); color:var(--g)">
+      <h2 class="profit-title" style="margin:0 0 var(--space); font-size:var(--fz-h2); color:var(--g)">
         수익분석
       </h2>
       <div class="profit-filter">
@@ -656,26 +675,26 @@
       </div>
 
       <div class="row" style="margin: var(--lg) 0 var(--space)">
-        <div class="card" style="flex:1 1 200px;text-align:center">
+        <div class="card profit-card" style="flex:1 1 200px;text-align:center">
           <div class="mini">총 예산</div>
           <div id="profitCardTotalBudget" class="number" style="font-size:22px;font-weight:900;margin-top:8px">0원</div>
         </div>
-        <div class="card" style="flex:1 1 200px;text-align:center">
+        <div class="card profit-card" style="flex:1 1 200px;text-align:center">
           <div class="mini">인건비(총급여)</div>
           <div id="profitCardTotalLabor" class="number" style="font-size:22px;font-weight:900;margin-top:8px">0원</div>
         </div>
-        <div class="card" style="flex:1 1 200px;text-align:center">
+        <div class="card profit-card" style="flex:1 1 200px;text-align:center">
           <div class="mini">경비지출</div>
           <div id="profitCardTotalExpense" class="number" style="font-size:22px;font-weight:900;margin-top:8px">0원</div>
         </div>
-        <div class="card" style="flex:1 1 200px;text-align:center">
+        <div class="card profit-card" style="flex:1 1 200px;text-align:center">
           <div class="mini">순이익</div>
           <div id="profitCardNetProfit" class="number text-blue" style="font-size:22px;font-weight:900;margin-top:8px">0원</div>
         </div>
       </div>
 
-      <div class="accordion" style="margin-top: var(--space)">
-        <div class="accordion-header" style="font-weight:900;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:12px;background:#f8f9fa;border-radius:8px;transition:all 0.3s ease">
+      <div class="accordion active" style="margin-top: var(--space)">
+        <div class="accordion-header profit-accordion-header" style="font-weight:900;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:12px;border-radius:8px;transition:all 0.3s ease;color:var(--t)">
           <span>인건비 현황</span>
           <i class="fas fa-chevron-down" style="transition:transform 0.3s ease"></i>
         </div>
@@ -702,8 +721,8 @@
         </div>
       </div>
 
-      <div class="card" style="margin-top: var(--space)">
-        <div style="font-weight:900;margin-bottom:8px">
+      <div class="card profit-card" style="margin-top: var(--space)">
+        <div class="profit-section-title" style="font-weight:900;margin-bottom:8px;color:var(--t)">
           금전출납
         </div>
         <div class="table-scroll">
