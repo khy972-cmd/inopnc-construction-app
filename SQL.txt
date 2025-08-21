@@ -9,15 +9,15 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE TABLE IF NOT EXISTS public.workers (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
-  daily int4 NOT NULL DEFAULT 0,
+  daily int4,  -- NULL 허용으로 변경
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS public.sites (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  company_name text,
+  company_name text,  -- NULL 허용
   name text NOT NULL,
-  budget int4 NOT NULL DEFAULT 0,
+  budget int4,  -- NULL 허용으로 변경
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
@@ -35,12 +35,12 @@ CREATE TABLE IF NOT EXISTS public.expenses (
   id text PRIMARY KEY,  -- 프론트에서 uid()로 생성해 넣음
   date date NOT NULL,
   site_id uuid NOT NULL REFERENCES public.sites(id) ON DELETE CASCADE,
-  worker_name text,
-  category text,
+  worker_name text,  -- NULL 허용
+  category text,  -- NULL 허용
   amount int4 NOT NULL DEFAULT 0,
-  vendor text,
-  address text,
-  memo text,
+  vendor text,  -- NULL 허용
+  address text,  -- NULL 허용
+  memo text,  -- NULL 허용
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
@@ -88,8 +88,15 @@ BEGIN
     ALTER TABLE public.sites ALTER COLUMN company_name DROP NOT NULL;
   EXCEPTION WHEN OTHERS THEN NULL; END;
 
-  -- (D) NULL 값 보정
-  UPDATE public.sites SET company_name = COALESCE(company_name, '');
+  -- (D) workers.daily NOT NULL 제약 해제
+  BEGIN
+    ALTER TABLE public.workers ALTER COLUMN daily DROP NOT NULL;
+  EXCEPTION WHEN OTHERS THEN NULL; END;
+
+  -- (E) sites.budget NOT NULL 제약 해제
+  BEGIN
+    ALTER TABLE public.sites ALTER COLUMN budget DROP NOT NULL;
+  EXCEPTION WHEN OTHERS THEN NULL; END;
 
   -- expenses.id 타입 교정
   SELECT EXISTS (

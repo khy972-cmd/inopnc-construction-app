@@ -5,43 +5,80 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>오프라인 - INOPNC</title>
   <style>
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    :root {
+      --primary-color: #0068FE;
+      --primary-hover: #0056cc;
+      --bg-color: #f6f8fb;
+      --card-bg: #ffffff;
+      --text-color: #111827;
+      --text-secondary: #6b7280;
+      --shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    }
+
+    [data-theme="dark"] {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --text-color: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    * {
       margin: 0;
-      padding: 20px;
-      background: #f6f8fb;
-      color: #111827;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg-color);
+      color: var(--text-color);
       display: flex;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
+      transition: all 0.3s ease;
     }
+
     .offline-container {
       text-align: center;
       max-width: 400px;
       padding: 40px 20px;
-      background: white;
+      background: var(--card-bg);
       border-radius: 16px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      box-shadow: var(--shadow);
+      transition: all 0.3s ease;
     }
+
     .icon {
       font-size: 64px;
-      color: #0068FE;
+      color: var(--primary-color);
       margin-bottom: 20px;
+      animation: pulse 2s infinite;
     }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
     h1 {
-      color: #111827;
+      color: var(--text-color);
       margin: 0 0 16px 0;
       font-size: 24px;
       font-weight: 700;
+      transition: color 0.3s ease;
     }
+
     p {
-      color: #6b7280;
+      color: var(--text-secondary);
       margin: 0 0 24px 0;
       line-height: 1.6;
+      transition: color 0.3s ease;
     }
+
     .btn {
-      background: #0068FE;
+      background: var(--primary-color);
       color: white;
       border: none;
       padding: 12px 24px;
@@ -50,18 +87,114 @@
       cursor: pointer;
       text-decoration: none;
       display: inline-block;
+      transition: all 0.3s ease;
+      font-size: 14px;
     }
+
     .btn:hover {
-      background: #0056cc;
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 104, 254, 0.3);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .status-indicator {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: #ef4444;
+      border-radius: 50%;
+      margin-right: 8px;
+      animation: blink 1.5s infinite;
+    }
+
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0.3; }
+    }
+
+    .retry-count {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 12px;
+    }
+
+    @media (max-width: 480px) {
+      .offline-container {
+        margin: 20px;
+        padding: 30px 20px;
+      }
+      
+      h1 {
+        font-size: 20px;
+      }
+      
+      .icon {
+        font-size: 48px;
+      }
     }
   </style>
 </head>
 <body>
   <div class="offline-container">
     <div class="icon">📶</div>
-    <h1>인터넷 연결 없음</h1>
+    <h1><span class="status-indicator"></span>인터넷 연결 없음</h1>
     <p>현재 오프라인 상태입니다. 인터넷 연결을 확인하고 다시 시도해주세요.</p>
-    <button class="btn" onclick="window.location.reload()">다시 시도</button>
+    <button class="btn" onclick="retryConnection()">다시 시도</button>
+    <div class="retry-count" id="retryCount"></div>
   </div>
+
+  <script>
+    let retryAttempts = 0;
+    const maxRetries = 5;
+
+    function retryConnection() {
+      retryAttempts++;
+      const retryCountEl = document.getElementById('retryCount');
+      
+      if (retryAttempts <= maxRetries) {
+        retryCountEl.textContent = `시도 횟수: ${retryAttempts}/${maxRetries}`;
+        
+        // 네트워크 상태 확인
+        if (navigator.onLine) {
+          window.location.reload();
+        } else {
+          // 잠시 대기 후 다시 시도
+          setTimeout(() => {
+            if (navigator.onLine) {
+              window.location.reload();
+            }
+          }, 1000);
+        }
+      } else {
+        retryCountEl.textContent = '최대 시도 횟수에 도달했습니다. 잠시 후 다시 시도해주세요.';
+        retryCountEl.style.color = '#ef4444';
+      }
+    }
+
+    // 네트워크 상태 모니터링
+    window.addEventListener('online', () => {
+      window.location.reload();
+    });
+
+    // 페이지 로드 시 네트워크 상태 확인
+    window.addEventListener('load', () => {
+      if (navigator.onLine) {
+        window.location.reload();
+      }
+    });
+
+    // 다크모드 감지 (선택적)
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+      document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+    });
+  </script>
 </body>
 </html>

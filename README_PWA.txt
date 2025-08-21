@@ -1,65 +1,177 @@
-INOPNC PWA 번들 (v20250127_002)
-================================
+# INOPNC PWA (Progressive Web App) 가이드
 
-이 폴더/ZIP의 파일들을 **웹 서버 루트(/)** 에 배치하세요.
+## 개요
+INOPNC 건설현장관리 시스템은 PWA(Progressive Web App)로 구현되어 모바일과 데스크톱에서 네이티브 앱과 같은 경험을 제공합니다.
 
-업데이트 내용 (v20250127_002):
-- 수익분석 페이지 다크모드 색상 오류 수정
-- 아코디언 컴포넌트 다크모드 최적화
-- 캘린더 셀 테두리 라운드 제거
-- 공수 0/0.5 빨간색 표시 기능 추가
+## 주요 PWA 기능
 
-포함 파일
----------
-- manifest.webmanifest (PWA 매니페스트)
-- service-worker.js (서비스 워커)
-- offline.html (오프라인 페이지)
-- icon-192x192.png (앱 아이콘 192px)
-- icon-512x512.png (앱 아이콘 512px)
+### 1. 설치 가능
+- 홈 화면에 앱 아이콘 추가
+- 독립적인 창에서 실행
+- 네이티브 앱과 유사한 사용자 경험
 
-적용 방법
----------
-1) index.html의 <head>에 다음이 포함되어 있는지 확인:
-   <link rel="manifest" href="/manifest.webmanifest">
-   <meta name="theme-color" content="#0068FE">
-   <meta name="apple-mobile-web-app-capable" content="yes">
-   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-   <meta name="apple-mobile-web-app-title" content="INOPNC 현장관리">
+### 2. 오프라인 지원
+- Service Worker를 통한 캐싱
+- 네트워크 연결 없이도 기본 기능 사용 가능
+- 오프라인 상태 표시기
 
-2) 페이지 로드시 서비스 워커를 등록하세요(이미 구현되어 있다면 그대로 사용):
-   navigator.serviceWorker.register('/service-worker.js', { scope: '/' });
-
-3) HTTPS에서 접근해야 설치/캐싱이 동작합니다(로컬 개발은 http://localhost 허용).
-
-4) 새 버전 반영:
-   서비스 워커가 업데이트되면 콘솔에 안내가 표시됩니다. 필요시 postMessage로 SKIP_WAITING을 전송해 즉시 업데이트할 수 있습니다.
-
-테스트
------
-- 페이지 방문 후 DevTools > Application > Service Workers에서 등록 상태 확인
-- DevTools > Network에서 "Offline" 체크 후 화면 동작/오프라인 페이지 확인
-- DevTools > Application > Manifest에서 PWA 설정 확인
-- 모바일에서 "홈 화면에 추가" 기능 테스트
-
-캐시 정책 (요약)
-----------------
-- 내비게이션: 네트워크 우선, 실패시 캐시/오프라인
-- 동일 출처 정적/JSON: Stale-While-Revalidate
-- 외부 CDN/글꼴: Cache-First
-- 외부 리소스 프리캐시: Google Fonts, Font Awesome, XLSX.js, Supabase
-
-주요 기능
----------
-- 오프라인 지원 (기본 페이지 캐싱)
-- 홈 화면 설치 가능
-- 백그라운드 동기화 지원
-- 반응형 디자인 (모바일 최적화)
+### 3. 반응형 디자인
+- 모든 화면 크기에 최적화
+- 터치 친화적 인터페이스
 - 다크모드 지원
-- 실시간 데이터 동기화 (Supabase)
 
-업데이트 방법
--------------
-1. service-worker.js의 CACHE_VERSION을 변경
-2. 서버에 새 파일 배포
-3. 사용자가 페이지 새로고침 시 자동 업데이트
-4. 즉시 업데이트를 원하면: navigator.serviceWorker.controller.postMessage({type: 'SKIP_WAITING'});
+## 설치 방법
+
+### 모바일 (Android)
+1. Chrome 브라우저에서 앱 접속
+2. 주소창 옆 "설치" 버튼 클릭
+3. "홈 화면에 추가" 선택
+4. 앱 아이콘 확인 후 설치 완료
+
+### 모바일 (iOS)
+1. Safari 브라우저에서 앱 접속
+2. 공유 버튼(□↑) 클릭
+3. "홈 화면에 추가" 선택
+4. 앱 이름 확인 후 "추가" 클릭
+
+### 데스크톱 (Chrome/Edge)
+1. 브라우저에서 앱 접속
+2. 주소창 옆 "설치" 버튼 클릭
+3. "설치" 클릭하여 완료
+
+## PWA 파일 구조
+
+```
+/
+├── index.html              # 메인 앱 파일
+├── manifest.webmanifest    # PWA 매니페스트
+├── service-worker.js       # Service Worker
+├── offline.html           # 오프라인 페이지
+├── icon-192x192.png       # 앱 아이콘 (192x192)
+├── icon-512x512.png       # 앱 아이콘 (512x512)
+└── README_PWA.txt         # 이 파일
+```
+
+## Service Worker 기능
+
+### 캐싱 전략
+- **정적 리소스**: Cache-First (CSS, JS, 이미지)
+- **동적 콘텐츠**: Network-First (API 호출)
+- **네비게이션**: Stale-While-Revalidate
+
+### 오프라인 지원
+- 기본 페이지 캐싱
+- 오프라인 상태 감지
+- 자동 재연결 시도
+
+### 백그라운드 동기화
+- 네트워크 복구 시 데이터 동기화
+- 푸시 알림 지원 (선택적)
+
+## 매니페스트 설정
+
+### 기본 정보
+- **앱 이름**: INOPNC · 건설현장관리
+- **짧은 이름**: INOPNC
+- **테마 색상**: #0068FE (파란색)
+- **배경 색상**: #f6f8fb (연한 회색)
+
+### 표시 모드
+- **standalone**: 브라우저 UI 숨김
+- **portrait**: 세로 모드 고정
+- **minimal-ui**: 최소한의 브라우저 UI
+
+### 바로가기
+- 홈 화면
+- 경비관리
+- 수익분석
+
+## 개발 및 배포
+
+### 로컬 개발
+```bash
+# 간단한 HTTP 서버 실행
+python -m http.server 8000
+# 또는
+npx serve .
+```
+
+### 배포 요구사항
+- HTTPS 필수 (PWA 요구사항)
+- Service Worker 등록
+- 매니페스트 파일 접근 가능
+
+### 캐시 업데이트
+Service Worker 캐시 버전을 변경하여 업데이트:
+```javascript
+const CACHE_VERSION = 'inopnc-pwa-20250127_003';
+```
+
+## 문제 해결
+
+### 설치가 안 되는 경우
+1. HTTPS 연결 확인
+2. 브라우저 PWA 지원 확인
+3. 매니페스트 파일 접근 가능 여부 확인
+
+### 오프라인 기능 문제
+1. Service Worker 등록 상태 확인
+2. 브라우저 개발자 도구에서 캐시 확인
+3. 네트워크 탭에서 오프라인 모드 테스트
+
+### 업데이트 문제
+1. 브라우저 캐시 삭제
+2. Service Worker 수동 업데이트
+3. 앱 재설치
+
+## 브라우저 지원
+
+### 완전 지원
+- Chrome 67+
+- Edge 79+
+- Firefox 67+
+- Safari 11.1+
+
+### 부분 지원
+- Internet Explorer (PWA 미지원)
+- 구형 모바일 브라우저
+
+## 성능 최적화
+
+### 로딩 속도
+- 리소스 압축 및 최적화
+- 이미지 최적화
+- 코드 분할 및 지연 로딩
+
+### 메모리 사용량
+- 효율적인 캐싱 전략
+- 불필요한 리소스 제거
+- 메모리 누수 방지
+
+## 보안 고려사항
+
+### HTTPS 필수
+- PWA 설치를 위해 HTTPS 필요
+- 민감한 데이터 보호
+- Service Worker 보안
+
+### 권한 관리
+- 필요한 권한만 요청
+- 사용자 동의 기반 접근
+- 투명한 권한 사용
+
+## 업데이트 및 유지보수
+
+### 정기 업데이트
+- 캐시 버전 관리
+- 새로운 기능 추가
+- 보안 패치 적용
+
+### 사용자 알림
+- 업데이트 알림
+- 새로운 기능 안내
+- 중요 변경사항 공지
+
+---
+
+**참고**: 이 PWA는 Supabase를 백엔드로 사용하며, 실시간 데이터 동기화와 오프라인 기능을 제공합니다.

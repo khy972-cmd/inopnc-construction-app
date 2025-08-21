@@ -24,5 +24,58 @@
   ],
   "prefer_related_applications": false,
   "categories": ["business", "productivity"],
-  "lang": "ko"
+  "lang": "ko",
+  "dir": "ltr",
+  "display_override": ["standalone", "minimal-ui"],
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "handle_links": "preferred",
+  "protocol_handlers": [
+    {
+      "protocol": "web+inopnc",
+      "url": "/?action=%s"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "홈",
+      "short_name": "홈",
+      "description": "홈 화면으로 이동",
+      "url": "/",
+      "icons": [
+        {
+          "src": "/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "경비관리",
+      "short_name": "경비",
+      "description": "경비 관리 화면으로 이동",
+      "url": "/#expense",
+      "icons": [
+        {
+          "src": "/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "수익분석",
+      "short_name": "수익",
+      "description": "수익 분석 화면으로 이동",
+      "url": "/#profit",
+      "icons": [
+        {
+          "src": "/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
 }
