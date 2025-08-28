@@ -132,7 +132,13 @@ INSERT INTO public.system_config(key,value,description) VALUES
 ('default_business_days','30','월 환산 기준일수')
 ON CONFLICT (key) DO NOTHING;
 
--- 기존 행 updated_at 백필
+-- 기존 행 created_at/updated_at 백필
+UPDATE public.workers         SET created_at = NOW() WHERE created_at IS NULL;
+UPDATE public.sites           SET created_at = NOW() WHERE created_at IS NULL;
+UPDATE public.work_records    SET created_at = NOW() WHERE created_at IS NULL;
+UPDATE public.expense_records SET created_at = NOW() WHERE created_at IS NULL;
+UPDATE public.system_config   SET created_at = NOW() WHERE created_at IS NULL;
+
 UPDATE public.workers         SET updated_at = NOW() WHERE updated_at IS NULL;
 UPDATE public.sites           SET updated_at = NOW() WHERE updated_at IS NULL;
 UPDATE public.work_records    SET updated_at = NOW() WHERE updated_at IS NULL;
@@ -149,164 +155,17 @@ CREATE INDEX IF NOT EXISTS idx_wr_date        ON public.work_records(date);
 CREATE INDEX IF NOT EXISTS idx_wr_site        ON public.work_records(site);
 CREATE INDEX IF NOT EXISTS idx_wr_worker      ON public.work_records(worker);
 CREATE INDEX IF NOT EXISTS idx_wr_date_worker ON public.work_records(date, worker);
+-- 조회 최적화(현장+날짜 내림차순)
+CREATE INDEX IF NOT EXISTS idx_wr_site_date   ON public.work_records(site, date DESC);
 
 CREATE INDEX IF NOT EXISTS idx_er_date        ON public.expense_records(date);
 CREATE INDEX IF NOT EXISTS idx_er_site        ON public.expense_records(site);
 CREATE INDEX IF NOT EXISTS idx_er_category    ON public.expense_records(category);
 
 -- =========================================================
--- 2.5) 중복 정리 + 업서트용 UNIQUE 인덱스/제약(없으면 생성)
+-- 3) 트리거 함수 + 트리거 (중복 정리 전에 정의하여 UPDATE 시 급여 재계산 적용)
 -- =========================================================
--- (a) workers(name), sites(name) 공백 정리
-UPDATE public.workers SET name = TRIM(name);
-UPDATE public.sites   SET name = TRIM(name);
-
--- (b) workers 중복 제거(같은 name 한 개만 보존)
-WITH ranked AS (
-  SELECT id, name, ROW_NUMBER() OVER (PARTITION BY name ORDER BY id) rn
-  FROM public.workers
-)
-DELETE FROM public.workers w USING ranked r
-WHERE w.id=r.id AND r.rn>1;
-
--- (c) sites 중복 제거(같은 name 한 개만 보존)
-WITH ranked AS (
-  SELECT id, name, ROW_NUMBER() OVER (PARTITION BY name ORDER BY id) rn
-  FROM public.sites
-)
-DELETE FROM public.sites s USING ranked r
-WHERE s.id=r.id AND r.rn>1;
-
--- (d) UNIQUE 제약 보강(없으면 추가)
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint
-    WHERE conname='uk_workers_name'
-      AND conrelid='public.workers'::regclass
-  ) THEN
-    ALTER TABLE public.workers
-      ADD CONSTRAINT uk_workers_name UNIQUE(name);
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint
-    WHERE conname='uk_sites_name'
-      AND conrelid='public.sites'::regclass
-  ) THEN
-    ALTER TABLE public.sites
-      ADD CONSTRAINT uk_sites_name UNIQUE(name);
-  END IF;
-END$$;
-
--- (e) work_records / expense_records 중복 정리
-DELETE FROM public.work_records wr
-USING (
-  SELECT date, site, worker, MAX(id) keep_id
-  FROM public.work_records
-  GROUP BY 1,2,3
-  HAVING COUNT(*)>1
-) d
-WHERE wr.date=d.date AND wr.site=d.site AND wr.worker=d.worker AND wr.id<>d.keep_id;
-
-DELETE FROM public.expense_records er
-USING (
-  SELECT date, site, category, amount, MAX(id) keep_id
-  FROM public.expense_records
-  GROUP BY 1,2,3,4
-  HAVING COUNT(*)>1
-) d
-WHERE er.date=d.date AND er.site=d.site AND er.category=d.category AND er.amount=d.amount AND er.id<>d.keep_id;
-
--- (f) 업서트용 UNIQUE 인덱스 + 제약(없으면 생성)
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_indexes
-    WHERE schemaname='public' AND indexname='uq_work_records_date_site_worker'
-  ) THEN
-    CREATE UNIQUE INDEX uq_work_records_date_site_worker
-      ON public.work_records(date, site, worker);
-  END IF;
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint
-    WHERE conname='uk_work_records_date_site_worker'
-      AND conrelid='public.work_records'::regclass
-  ) THEN
-    ALTER TABLE public.work_records
-      ADD CONSTRAINT uk_work_records_date_site_worker
-      UNIQUE USING INDEX uq_work_records_date_site_worker;
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_indexes
-    WHERE schemaname='public' AND indexname='uq_expense_records_date_site_category_amount'
-  ) THEN
-    CREATE UNIQUE INDEX uq_expense_records_date_site_category_amount
-      ON public.expense_records(date, site, category, amount);
-  END IF;
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint
-    WHERE conname='uk_expense_records_date_site_category_amount'
-      AND conrelid='public.expense_records'::regclass
-  ) THEN
-    ALTER TABLE public.expense_records
-      ADD CONSTRAINT uk_expense_records_date_site_category_amount
-      UNIQUE USING INDEX uq_expense_records_date_site_category_amount;
-  END IF;
-END$$;
-
--- =========================================================
--- 3) RLS (정책은 일단 전원 허용; 운영 시 강화 권장)
--- =========================================================
-ALTER TABLE public.workers         ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.sites           ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.work_records    ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.expense_records ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.system_config   ENABLE ROW LEVEL SECURITY;
-
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='workers') THEN
-    CREATE POLICY "all select" ON public.workers  FOR SELECT USING (true);
-    CREATE POLICY "all insert" ON public.workers  FOR INSERT WITH CHECK (true);
-    CREATE POLICY "all update" ON public.workers  FOR UPDATE USING (true);
-    CREATE POLICY "all delete" ON public.workers  FOR DELETE USING (true);
-  END IF;
-
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='sites') THEN
-    CREATE POLICY "all select" ON public.sites    FOR SELECT USING (true);
-    CREATE POLICY "all insert" ON public.sites    FOR INSERT WITH CHECK (true);
-    CREATE POLICY "all update" ON public.sites    FOR UPDATE USING (true);
-    CREATE POLICY "all delete" ON public.sites    FOR DELETE USING (true);
-  END IF;
-
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='work_records') THEN
-    CREATE POLICY "all select" ON public.work_records FOR SELECT USING (true);
-    CREATE POLICY "all insert" ON public.work_records FOR INSERT WITH CHECK (true);
-    CREATE POLICY "all update" ON public.work_records FOR UPDATE USING (true);
-    CREATE POLICY "all delete" ON public.work_records FOR DELETE USING (true);
-  END IF;
-
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='expense_records') THEN
-    CREATE POLICY "all select" ON public.expense_records FOR SELECT USING (true);
-    CREATE POLICY "all insert" ON public.expense_records FOR INSERT WITH CHECK (true);
-    CREATE POLICY "all update" ON public.expense_records FOR UPDATE USING (true);
-    CREATE POLICY "all delete" ON public.expense_records FOR DELETE USING (true);
-  END IF;
-
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='system_config') THEN
-    CREATE POLICY "all select" ON public.system_config FOR SELECT USING (true);
-    CREATE POLICY "all insert" ON public.system_config FOR INSERT WITH CHECK (true);
-    CREATE POLICY "all update" ON public.system_config FOR UPDATE USING (true);
-    CREATE POLICY "all delete" ON public.system_config FOR DELETE USING (true);
-  END IF;
-END$$;
-
--- =========================================================
--- 4) 트리거 함수 + 트리거
--- =========================================================
--- updated_at 안전 갱신(해당 컬럼이 있을 때만)
+-- updated_at 자동 갱신
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -405,6 +264,179 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='ck_expense_records_amount_nonneg') THEN
     ALTER TABLE public.expense_records
       ADD CONSTRAINT ck_expense_records_amount_nonneg CHECK (amount >= 0);
+  END IF;
+END$$;
+
+-- =========================================================
+-- 4) 중복 정리(유실 방지형) + 트림 + 업서트용 UNIQUE 인덱스/제약
+-- =========================================================
+-- (a) workers(name), sites(name) 공백 정리
+UPDATE public.workers SET name = TRIM(name);
+UPDATE public.sites   SET name = TRIM(name);
+
+-- (b) workers 중복 제거(같은 name 한 개만 보존)
+WITH ranked AS (
+  SELECT id, name, ROW_NUMBER() OVER (PARTITION BY name ORDER BY id) rn
+  FROM public.workers
+)
+DELETE FROM public.workers w USING ranked r
+WHERE w.id=r.id AND r.rn>1;
+
+-- (c) sites 중복 제거(같은 name 한 개만 보존)
+WITH ranked AS (
+  SELECT id, name, ROW_NUMBER() OVER (PARTITION BY name ORDER BY id) rn
+  FROM public.sites
+)
+DELETE FROM public.sites s USING ranked r
+WHERE s.id=r.id AND r.rn>1;
+
+-- (d) UNIQUE 제약 보강(없으면 추가)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname='uk_workers_name'
+      AND conrelid='public.workers'::regclass
+  ) THEN
+    ALTER TABLE public.workers
+      ADD CONSTRAINT uk_workers_name UNIQUE(name);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname='uk_sites_name'
+      AND conrelid='public.sites'::regclass
+  ) THEN
+    ALTER TABLE public.sites
+      ADD CONSTRAINT uk_sites_name UNIQUE(name);
+  END IF;
+END$$;
+
+-- (e) work_records 중복 합산 후 1행만 보존 + 메모 병합(keep 외 메모만 추가)
+WITH base AS (
+  SELECT
+    date, site, worker, id,
+    COALESCE(days,0)  AS days,
+    COALESCE(hours,0) AS hours,
+    memo,
+    MIN(id) OVER (PARTITION BY date, site, worker) AS keep_id
+  FROM public.work_records
+),
+fold AS (
+  SELECT date, site, worker, keep_id,
+         SUM(days)  AS sum_days,
+         SUM(hours) AS sum_hours
+  FROM base
+  GROUP BY 1,2,3,4
+  HAVING COUNT(*) > 1
+),
+memos AS (
+  SELECT date, site, worker, keep_id,
+         STRING_AGG(COALESCE(memo,''), E'\n' ORDER BY id) AS dup_memo
+  FROM base
+  WHERE id <> keep_id
+  GROUP BY 1,2,3,4
+)
+UPDATE public.work_records w
+SET
+  days  = f.sum_days,
+  hours = f.sum_hours,
+  memo  = NULLIF(
+            TRIM(BOTH E'\n' FROM CONCAT_WS(E'\n', NULLIF(w.memo,''), NULLIF(m.dup_memo,'')))
+          ,''
+          )
+FROM fold f
+LEFT JOIN memos m
+  ON m.date=f.date AND m.site=f.site AND m.worker=f.worker AND m.keep_id=f.keep_id
+WHERE w.id = f.keep_id;
+
+DELETE FROM public.work_records w
+USING (
+  SELECT id
+  FROM (
+    SELECT id,
+           ROW_NUMBER() OVER (PARTITION BY date, site, worker ORDER BY id) AS rn
+    FROM public.work_records
+  ) t
+  WHERE t.rn > 1
+) d
+WHERE w.id = d.id;
+
+-- (f) expense_records 중복: 금액 키가 동일하므로 메모만 병합 후 나머지 삭제
+WITH base AS (
+  SELECT
+    date, site, category, amount, id, memo,
+    MIN(id) OVER (PARTITION BY date, site, category, amount) AS keep_id
+  FROM public.expense_records
+),
+memos AS (
+  SELECT date, site, category, amount, keep_id,
+         STRING_AGG(COALESCE(memo,''), E'\n' ORDER BY id) AS dup_memo
+  FROM base
+  WHERE id <> keep_id
+  GROUP BY 1,2,3,4,5
+),
+keeps AS (
+  SELECT DISTINCT date, site, category, amount, keep_id FROM base
+  WHERE keep_id IS NOT NULL
+)
+UPDATE public.expense_records e
+SET memo = NULLIF(
+             TRIM(BOTH E'\n' FROM CONCAT_WS(E'\n', NULLIF(e.memo,''), NULLIF(m.dup_memo,'')))
+           ,''
+           )
+FROM keeps k
+LEFT JOIN memos m
+  ON m.date=k.date AND m.site=k.site AND m.category=k.category AND m.amount=k.amount AND m.keep_id=k.keep_id
+WHERE e.id = k.keep_id;
+
+DELETE FROM public.expense_records e
+USING (
+  SELECT id
+  FROM (
+    SELECT id,
+           ROW_NUMBER() OVER (PARTITION BY date, site, category, amount ORDER BY id) AS rn
+    FROM public.expense_records
+  ) t
+  WHERE t.rn > 1
+) d
+WHERE e.id = d.id;
+
+-- (g) 업서트용 UNIQUE 인덱스 + 제약(없으면 생성)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes
+    WHERE schemaname='public' AND indexname='uq_work_records_date_site_worker'
+  ) THEN
+    CREATE UNIQUE INDEX uq_work_records_date_site_worker
+      ON public.work_records(date, site, worker);
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname='uk_work_records_date_site_worker'
+      AND conrelid='public.work_records'::regclass
+  ) THEN
+    ALTER TABLE public.work_records
+      ADD CONSTRAINT uk_work_records_date_site_worker
+      UNIQUE USING INDEX uq_work_records_date_site_worker;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes
+    WHERE schemaname='public' AND indexname='uq_expense_records_date_site_category_amount'
+  ) THEN
+    CREATE UNIQUE INDEX uq_expense_records_date_site_category_amount
+      ON public.expense_records(date, site, category, amount);
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname='uk_expense_records_date_site_category_amount'
+      AND conrelid='public.expense_records'::regclass
+  ) THEN
+    ALTER TABLE public.expense_records
+      ADD CONSTRAINT uk_expense_records_date_site_category_amount
+      UNIQUE USING INDEX uq_expense_records_date_site_category_amount;
   END IF;
 END$$;
 
@@ -543,8 +575,9 @@ BEGIN
     JOIN public.workers w ON wl.worker_id = w.id
     ON CONFLICT (date, site, worker)
     DO UPDATE SET
-      days = EXCLUDED.days,
-      memo = COALESCE(EXCLUDED.memo, public.work_records.memo);
+      days = COALESCE(public.work_records.days,0) + COALESCE(EXCLUDED.days,0),
+      memo = NULLIF(TRIM(BOTH E'\n' FROM CONCAT_WS(E'\n',
+               NULLIF(public.work_records.memo,''), NULLIF(EXCLUDED.memo,''))), '');
   END IF;
 END$$;
 
@@ -566,9 +599,9 @@ BEGIN
 END$$;
 
 -- =========================================================
--- 7) 헬퍼 함수 (옵션 A: 바로 표준 테이블에 입력)
+-- 7) 헬퍼 함수 (보존형/합산형 둘 다 제공)
 -- =========================================================
--- 단건 작업 입력
+-- 단건 작업 입력(보존형: 기존 있으면 변경 없음)
 CREATE OR REPLACE FUNCTION public.log_work(
   p_date   date,
   p_site   text,
@@ -588,16 +621,50 @@ BEGIN
 
   INSERT INTO public.work_records(date, site, worker, days, hours, memo)
   VALUES (p_date, p_site, p_worker, p_days, p_hours, p_memo)
+  ON CONFLICT (date, site, worker) DO NOTHING
+  RETURNING * INTO v_rec;
+
+  IF v_rec.id IS NULL THEN
+    SELECT * INTO v_rec
+    FROM public.work_records
+    WHERE date = p_date AND site = p_site AND worker = p_worker;
+  END IF;
+
+  RETURN v_rec;
+END $$;
+
+-- 단건 작업 입력(합산형: 동일 키 존재 시 누계 + 메모 이어붙임)
+CREATE OR REPLACE FUNCTION public.log_work_merge(
+  p_date   date,
+  p_site   text,
+  p_worker text,
+  p_days   numeric DEFAULT NULL,
+  p_hours  numeric DEFAULT NULL,
+  p_memo   text   DEFAULT NULL
+) RETURNS public.work_records
+LANGUAGE plpgsql AS $$
+DECLARE v_rec public.work_records;
+BEGIN
+  p_site   := TRIM(p_site);
+  p_worker := TRIM(p_worker);
+
+  INSERT INTO public.sites(name)   VALUES (p_site)   ON CONFLICT (name) DO NOTHING;
+  INSERT INTO public.workers(name) VALUES (p_worker) ON CONFLICT (name) DO NOTHING;
+
+  INSERT INTO public.work_records(date, site, worker, days, hours, memo)
+  VALUES (p_date, p_site, p_worker, p_days, p_hours, p_memo)
   ON CONFLICT (date, site, worker) DO UPDATE
-    SET days  = COALESCE(EXCLUDED.days,  public.work_records.days),
-        hours = COALESCE(EXCLUDED.hours, public.work_records.hours),
-        memo  = COALESCE(EXCLUDED.memo,  public.work_records.memo)
+    SET days  = COALESCE(public.work_records.days, 0)  + COALESCE(EXCLUDED.days, 0),
+        hours = COALESCE(public.work_records.hours, 0) + COALESCE(EXCLUDED.hours, 0),
+        memo  = NULLIF(TRIM(BOTH E'\n' FROM CONCAT_WS(E'\n',
+                  NULLIF(public.work_records.memo,''), NULLIF(EXCLUDED.memo,'')))
+               ,'')
   RETURNING * INTO v_rec;
 
   RETURN v_rec;
-END; $$;
+END $$;
 
--- 단건 경비 입력
+-- 단건 경비 입력(보존형: 동일 키 존재 시 무시)
 CREATE OR REPLACE FUNCTION public.log_expense(
   p_date     date,
   p_site     text,
@@ -615,15 +682,21 @@ BEGIN
   INSERT INTO public.sites(name) VALUES (p_site) ON CONFLICT (name) DO NOTHING;
 
   INSERT INTO public.expense_records(date, site, worker, category, amount, location, address, memo)
-  VALUES (p_date, p_site, NULLIF(TRIM(COALESCE(p_worker,'')),''),
-          p_category, p_amount, p_location, p_address, p_memo)
+  VALUES (p_date, p_site, NULLIF(TRIM(COALESCE(p_worker,'')),''), p_category, p_amount, p_location, p_address, p_memo)
   ON CONFLICT (date, site, category, amount) DO NOTHING
   RETURNING * INTO v_rec;
 
-  RETURN v_rec;
-END; $$;
+  IF v_rec.id IS NULL THEN
+    SELECT * INTO v_rec
+    FROM public.expense_records
+    WHERE date=p_date AND site=p_site AND category=p_category AND amount=p_amount
+    LIMIT 1;
+  END IF;
 
--- 벌크 입력
+  RETURN v_rec;
+END $$;
+
+-- 벌크 입력(보존형)
 CREATE OR REPLACE FUNCTION public.bulk_log_work(p_rows jsonb)
 RETURNS integer LANGUAGE plpgsql AS $$
 DECLARE r jsonb; cnt int:=0;
@@ -640,7 +713,26 @@ BEGIN
     cnt := cnt + 1;
   END LOOP;
   RETURN cnt;
-END; $$;
+END $$;
+
+-- 벌크 입력(합산형)
+CREATE OR REPLACE FUNCTION public.bulk_log_work_merge(p_rows jsonb)
+RETURNS integer LANGUAGE plpgsql AS $$
+DECLARE r jsonb; cnt int:=0;
+BEGIN
+  FOR r IN SELECT * FROM jsonb_array_elements(p_rows) LOOP
+    PERFORM public.log_work_merge(
+      (r->>'date')::date,
+      r->>'site',
+      r->>'worker',
+      NULLIF(r->>'days','')::numeric,
+      NULLIF(r->>'hours','')::numeric,
+      r->>'memo'
+    );
+    cnt := cnt + 1;
+  END LOOP;
+  RETURN cnt;
+END $$;
 
 CREATE OR REPLACE FUNCTION public.bulk_log_expense(p_rows jsonb)
 RETURNS integer LANGUAGE plpgsql AS $$
@@ -660,15 +752,52 @@ BEGIN
     cnt := cnt + 1;
   END LOOP;
   RETURN cnt;
-END; $$;
+END $$;
 
 -- (선택) 재계산 헬퍼
 CREATE OR REPLACE FUNCTION public.recalc_work_records(p_from DATE, p_to DATE)
 RETURNS void LANGUAGE plpgsql AS $$
 BEGIN
+  -- 트리거 유도를 위한 더미 업데이트
   UPDATE public.work_records wr
      SET memo = wr.memo
    WHERE wr.date BETWEEN p_from AND p_to;
-END; $$;
+END $$;
+
+-- =========================================================
+-- 8) RLS (정책명 단위로 개별 확인/생성)  ※ 운영 시 실제 정책으로 강화 권장
+-- =========================================================
+DO $$
+DECLARE
+  rel REGCLASS;
+  rels REGCLASS[] := ARRAY[
+    'public.workers'::regclass,
+    'public.sites'::regclass,
+    'public.work_records'::regclass,
+    'public.expense_records'::regclass,
+    'public.system_config'::regclass
+  ];
+BEGIN
+  -- RLS 활성화
+  FOREACH rel IN ARRAY rels LOOP
+    EXECUTE format('ALTER TABLE %s ENABLE ROW LEVEL SECURITY;', rel);
+  END LOOP;
+
+  -- 정책별로 존재 확인 후 생성
+  FOREACH rel IN ARRAY rels LOOP
+    IF NOT EXISTS (SELECT 1 FROM pg_policy p WHERE p.polrelid = rel AND p.polname = 'all select') THEN
+      EXECUTE format('CREATE POLICY "all select" ON %s FOR SELECT USING (true);', rel);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policy p WHERE p.polrelid = rel AND p.polname = 'all insert') THEN
+      EXECUTE format('CREATE POLICY "all insert" ON %s FOR INSERT WITH CHECK (true);', rel);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policy p WHERE p.polrelid = rel AND p.polname = 'all update') THEN
+      EXECUTE format('CREATE POLICY "all update" ON %s FOR UPDATE USING (true);', rel);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policy p WHERE p.polrelid = rel AND p.polname = 'all delete') THEN
+      EXECUTE format('CREATE POLICY "all delete" ON %s FOR DELETE USING (true);', rel);
+    END IF;
+  END LOOP;
+END $$;
 
 COMMIT;
