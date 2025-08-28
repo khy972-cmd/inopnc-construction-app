@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 콘솔 - 작업관리 시스템</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --p: #0068FE;
+            --t: #111827;
+            --bg: #f6f8fb;
+            --b: #e5e7eb;
+            --g: #6b7280;
+            --space: 16px;
+            --lg: 24px;
+            --radius: 10px;
+            --fz-body: 14px;
+            --fz-small: 12px;
+            --fz-label: 12px;
+            --fz-btn: 14px;
+            --fz-h2: 16px;
+            --fz-table: 12px;
+            --fz-caption: 12px;
+            --fz-modal: 14px;
+            --input-bg: #fff;
+            --shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        }
+
+        [data-theme="dark"] {
+            --p: #4c8dff;
+            --t: #f0f4ff;
+            --bg: #0a1929;
+            --b: #1e3a5f;
+            --g: #7aa3ff;
+            --shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            --input-bg: #1e3a5f;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Inter, Poppins, system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--t);
+            line-height: 1.6;
+            font-size: var(--fz-body);
+            transition: background-color 0.3s, color 0.3s;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .admin-header {
+            background: var(--p);
+            color: white;
+            padding: 12px 0;
+            text-align: center;
+            box-shadow: var(--shadow);
+        }
+
+        .admin-header h1 {
+            font-size: 24px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .admin-header h1 i {
+            font-size: 20px;
+        }
+
+        .admin-header h1 span {
+            color: white;
+            font-weight: 600;
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        .admin-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 12px;
+        }
+
+        .admin-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .admin-card {
+            background: var(--input-bg);
+            border-radius: var(--radius);
+            padding: 12px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--b);
+            transition: all 0.3s ease;
+            margin-bottom: 12px;
+        }
+
+        .admin-card:last-child {
+            margin-bottom: 0;
+        }
+
+        .admin-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--t);
+            text-align: center;
+            margin-bottom: 12px;
+            padding: 12px 0;
+        }
+
+        .admin-card h2 {
+            color: var(--p);
+            margin-bottom: 12px;
+            font-size: var(--fz-h2);
+            border-bottom: 2px solid var(--p);
+            padding-bottom: 8px;
+        }
+
+        .upload-section {
+            margin-bottom: 12px;
+        }
+
+        .file-upload-area {
+            border: 2px dashed var(--b);
+            border-radius: var(--radius);
+            padding: 12px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: var(--bg);
+        }
+
+        .file-upload-area:hover {
+            border-color: var(--p);
+            background: rgba(0, 104, 254, 0.05);
+        }
+
+        .file-upload-area.dragover {
+            border-color: var(--p);
+            background: rgba(0, 104, 254, 0.1);
+        }
+
+        .file-upload-area i {
+            font-size: 24px;
+            color: var(--p);
+            margin-bottom: 8px;
+        }
+
+        .file-upload-area p {
+            margin: 4px 0;
+            font-size: var(--fz-caption);
+            color: var(--g);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            height: 38px;
+            padding: 0 12px;
+            border-radius: 10px;
+            border: 1px solid var(--b);
+            background: var(--input-bg);
+            color: var(--t);
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            font-size: var(--fz-btn);
+            min-width: 88px;
+            line-height: 1;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .upload-btn:hover::before {
+            left: 100%;
+        }
+
+        .upload-btn:hover {
+            background: rgba(0, 104, 254, 0.1);
+            border-color: var(--p);
+        }
+
+        .upload-btn:disabled {
+            background: var(--g);
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        [data-theme="dark"] .upload-btn {
+            background: var(--input-bg);
+            border-color: var(--b);
+            color: var(--t);
+        }
+
+        [data-theme="dark"] .upload-btn:hover {
+            background: rgba(76, 141, 255, 0.1);
+            border-color: var(--p);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 12px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--p);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .status-message {
+            padding: 12px;
+            border-radius: var(--radius);
+            margin: 12px 0;
+            font-weight: 500;
+            font-size: var(--fz-caption);
+        }
+
+        .status-success {
+            background: rgba(40, 167, 69, 0.1);
+            color: #28a745;
+            border: 1px solid rgba(40, 167, 69, 0.3);
+        }
+
+        .status-error {
+            background: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+            border: 1px solid rgba(220, 53, 69, 0.3);
+        }
+
+        .status-warning {
+            background: rgba(255, 193, 7, 0.1);
+            color: #ffc107;
+            border: 1px solid rgba(255, 193, 7, 0.3);
+        }
+
+        .status-info {
+            background: rgba(23, 162, 184, 0.1);
+            color: #17a2b8;
+            border: 1px solid rgba(23, 162, 184, 0.3);
+        }
+
+        .data-preview {
+            margin-top: 12px;
+        }
+
+        .data-preview h3 {
+            font-size: var(--fz-h2);
+            margin-bottom: 8px;
+            color: var(--t);
+        }
+
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+            font-size: var(--fz-table);
+        }
+
+        .preview-table th,
+        .preview-table td {
+            border: 1px solid var(--b);
+            padding: 8px 12px;
+            text-align: left;
+        }
+
+        .preview-table th {
+            background: var(--bg);
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 12px;
+            padding: 8px 0;
+        }
+
+        .preview-table tr:nth-child(even) {
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        [data-theme="dark"] .preview-table th {
+            background: var(--b);
+        }
+
+        [data-theme="dark"] .preview-table tr:nth-child(even) {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            height: 38px;
+            padding: 0 12px;
+            border-radius: 10px;
+            border: 1px solid var(--b);
+            background: var(--input-bg);
+            color: var(--t);
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            font-size: var(--fz-btn);
+            min-width: 88px;
+            line-height: 1;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        [data-theme="dark"] .btn {
+            background: var(--input-bg);
+            border-color: var(--b);
+            color: var(--t);
+        }
+
+        .btn-primary {
+            background: var(--p);
+            border-color: var(--p);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(0, 104, 254, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 104, 254, 0.4);
+        }
+
+        [data-theme="dark"] .btn-primary {
+            background: var(--p);
+            border-color: var(--p);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(76, 141, 255, 0.3);
+        }
+
+        [data-theme="dark"] .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(76, 141, 255, 0.4);
+        }
+
+        .btn-success {
+            background: #28a745;
+            border-color: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+            border-color: #1e7e34;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            border-color: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+            border-color: #bd2130;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            border-color: #ffc107;
+            color: var(--t);
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+            border-color: #d39e00;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .stat-card {
+            background: var(--input-bg);
+            border-radius: var(--radius);
+            padding: 12px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--b);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        [data-theme="dark"] .stat-card {
+            background: var(--input-bg);
+            border-color: var(--b);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--p);
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: var(--fz-caption);
+            color: var(--g);
+            font-weight: 500;
+        }
+
+        .table-scroll {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* 데이터 분석 결과 스타일 */
+        .data-analysis {
+            margin-top: 16px;
+            padding: 16px;
+            background: var(--bg);
+            border-radius: var(--radius);
+            border: 1px solid var(--b);
+        }
+
+        .analysis-summary h5 {
+            margin: 0 0 12px 0;
+            color: var(--p);
+            font-size: var(--fz-h2);
+        }
+
+        .summary-stats {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .stat-item {
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: var(--fz-caption);
+        }
+
+        .stat-item.total {
+            background: rgba(0, 104, 254, 0.1);
+            color: var(--p);
+        }
+
+        .stat-item.valid {
+            background: rgba(40, 167, 69, 0.1);
+            color: #28a745;
+        }
+
+        .stat-item.duplicates {
+            background: rgba(255, 193, 7, 0.1);
+            color: #ffc107;
+        }
+
+        .stat-item.unmatched {
+            background: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+        }
+
+        .stat-item.filtered {
+            background: rgba(108, 117, 125, 0.1);
+            color: #6c757d;
+        }
+
+        .duplicates-detail, .unmatched-detail, .filtered-detail {
+            margin-top: 16px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.02);
+            border-radius: 6px;
+        }
+
+        .duplicates-detail h6, .unmatched-detail h6, .filtered-detail h6 {
+            margin: 0 0 8px 0;
+            color: var(--t);
+            font-size: var(--fz-body);
+        }
+
+        .exact-duplicates, .partial-duplicates, .unmatched-workers, .unmatched-sites, .filtered-sites {
+            margin-bottom: 12px;
+        }
+
+        .exact-duplicates strong, .partial-duplicates strong, 
+        .unmatched-workers strong, .unmatched-sites strong, .filtered-sites strong {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--t);
+            font-size: var(--fz-caption);
+        }
+
+        .duplicate-item, .unmatched-item, .filtered-item {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 4px;
+            font-size: var(--fz-caption);
+        }
+
+        .row-info {
+            color: var(--g);
+            font-weight: 600;
+            min-width: 40px;
+        }
+
+        .duplicate-info, .unmatched-info, .filtered-info {
+            color: var(--t);
+        }
+
+        /* 검증 결과 스타일 */
+        .validation-summary {
+            margin-bottom: 16px;
+            padding: 12px;
+            background: rgba(0, 104, 254, 0.05);
+            border-radius: 6px;
+            border-left: 4px solid var(--p);
+        }
+
+        .validation-errors {
+            margin-bottom: 16px;
+            padding: 12px;
+            background: rgba(220, 53, 69, 0.05);
+            border-radius: 6px;
+            border-left: 4px solid #dc3545;
+        }
+
+        .validation-warnings {
+            margin-bottom: 16px;
+            padding: 12px;
+            background: rgba(255, 193, 7, 0.05);
+            border-radius: 6px;
+            border-left: 4px solid #ffc107;
+        }
+
+        .validation-summary h5, .validation-errors h5, .validation-warnings h5 {
+            margin: 0 0 8px 0;
+            font-size: var(--fz-body);
+        }
+
+        .error-item, .warning-item {
+            margin: 4px 0;
+            font-size: var(--fz-caption);
+        }
+
+        .error-item {
+            color: #dc3545;
+        }
+
+        .warning-item {
+            color: #ffc107;
+        }
+
+        .success-message {
+            color: #28a745;
+            font-weight: 600;
+            text-align: center;
+            padding: 12px;
+            background: rgba(40, 167, 69, 0.1);
+            border-radius: 6px;
+        }
+
+        /* 모바일 반응형 */
+        @media (max-width: 768px) {
+            .admin-grid {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+
+            .admin-container {
+                padding: 8px;
+            }
+
+            .admin-card {
+                padding: 8px;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* 데이터 정리 및 복구 기능 스타일 */
+        .data-issues {
+            margin-top: 16px;
+            padding: 16px;
+            background: var(--bg);
+            border-radius: var(--radius);
+            border: 1px solid var(--b);
+        }
+
+        .issues-summary h5 {
+            margin: 0 0 12px 0;
+            color: var(--p);
+            font-size: var(--fz-h2);
+        }
+
+        .issues-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        .issues-actions .btn {
+            min-width: auto;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .error-details {
+            margin-top: 16px;
+            padding: 12px;
+            background: rgba(220, 53, 69, 0.05);
+            border-radius: 6px;
+            border-left: 4px solid #dc3545;
+        }
+
+        .error-details h5 {
+            margin: 0 0 8px 0;
+            color: #dc3545;
+            font-size: var(--fz-body);
+        }
+
+        .error-details p {
+            margin: 4px 0;
+            font-size: var(--fz-caption);
+            word-break: break-all;
+        }
+
+        /* PWA 설치 버튼 스타일 */
+        .pwa-install-section {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+        }
+
+        .pwa-install-btn, .pwa-installed-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .pwa-install-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .pwa-installed-btn {
+            background: rgba(40, 167, 69, 0.8);
+            border-color: rgba(40, 167, 69, 0.9);
+            cursor: default;
+        }
+
+        .admin-header {
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <header class="admin-header">
+        <h1><i class="fas fa-cog"></i><span>관리자 콘솔</span></h1>
+        <div class="pwa-install-section">
+            <button id="adminPwaInstall" class="pwa-install-btn" style="display: none;">
+                <i class="fas fa-download"></i> 앱으로 설치
+            </button>
+            <button id="adminPwaInstalled" class="pwa-installed-btn" style="display: none;">
+                <i class="fas fa-check"></i> 설치됨
+            </button>
+        </div>
+    </header>
+
+    <div class="admin-container">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="totalWorkRecords">0</div>
+                <div class="stat-label">작업 기록</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalExpenses">0</div>
+                <div class="stat-label">경비 기록</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalWorkers">0</div>
+                <div class="stat-label">등록된 작업자</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalSites">0</div>
+                <div class="stat-label">등록된 현장</div>
+            </div>
+        </div>
+
+        <!-- 작업자 정보 관리 -->
+        <div class="admin-card">
+            <h2><i class="fas fa-users"></i> 작업자 정보 관리</h2>
+            <div class="upload-section">
+                <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: end;">
+                    <div>
+                        <label style="display: block; margin-bottom: 4px; font-size: var(--fz-caption);">작업자명</label>
+                        <input type="text" id="workerName" placeholder="작업자명" style="width: 100%; padding: 8px; border: 1px solid var(--b); border-radius: 6px;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 4px; font-size: var(--fz-caption);">일당 (원)</label>
+                        <input type="number" id="workerDaily" placeholder="일당" style="width: 100%; padding: 8px; border: 1px solid var(--b); border-radius: 6px;">
+                    </div>
+                    <button class="btn btn-primary" onclick="addWorker()">
+                        <i class="fas fa-plus"></i> 추가
+                    </button>
+                </div>
+                
+                <div id="workerList" style="margin-top: 12px;"></div>
+            </div>
+        </div>
+
+        <!-- 작업 데이터 업로드 -->
+        <div class="admin-card">
+            <h2><i class="fas fa-upload"></i> 작업 데이터 업로드</h2>
+            <div class="upload-section">
+                <div class="file-upload-area" id="workUploadArea">
+                    <i class="fas fa-file-excel"></i>
+                    <p><strong>작업 데이터 엑셀 파일을 업로드하세요</strong></p>
+                    <p>지원 형식: .xlsx, .xls</p>
+                    <p>필수 컬럼: 작업자, 일자, 현장, 공수, 메모</p>
+                    <input type="file" id="workFileInput" class="file-input" accept=".xlsx,.xls">
+                    <button class="upload-btn" onclick="document.getElementById('workFileInput').click()">
+                        파일 선택
+                    </button>
+                </div>
+                
+                <div id="workProgress" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="workProgressFill"></div>
+                    </div>
+                    <p id="workProgressText">업로드 진행 중...</p>
+                </div>
+                
+                <div id="workStatus"></div>
+                
+                <div class="data-preview" id="workPreview" style="display: none;">
+                    <h3>데이터 미리보기</h3>
+                    <div class="table-scroll">
+                        <table class="preview-table" id="workPreviewTable">
+                            <thead>
+                                <tr>
+                                    <th>작업자</th>
+                                    <th>일자</th>
+                                    <th>현장</th>
+                                    <th>공수</th>
+                                    <th>총급여</th>
+                                    <th>세금(3.3%)</th>
+                                    <th>실수령액</th>
+                                    <th>메모</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="btn btn-success" id="btnProcessWork" onclick="processWorkData()">
+                            <i class="fas fa-check"></i> 데이터 처리
+                        </button>
+                        <button class="btn btn-warning" onclick="cleanWorkData()">
+                            <i class="fas fa-broom"></i> 데이터 정리
+                        </button>
+                        <button class="btn btn-info" onclick="showWorkDataIssues()">
+                            <i class="fas fa-exclamation-triangle"></i> 문제점 보기
+                        </button>
+                        <button class="btn btn-danger" onclick="clearWorkData()">
+                            <i class="fas fa-times"></i> 초기화
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 경비 데이터 업로드 -->
+        <div class="admin-card">
+            <h2><i class="fas fa-receipt"></i> 경비 데이터 업로드</h2>
+            <div class="upload-section">
+                <div class="file-upload-area" id="expenseUploadArea">
+                    <i class="fas fa-file-excel"></i>
+                    <p><strong>경비 데이터 엑셀 파일을 업로드하세요</strong></p>
+                    <p>지원 형식: .xlsx, .xls</p>
+                    <p>필수 컬럼: 현장, 사용일, 작업자, 항목, 금액, 사용처, 주소, 메모</p>
+                    <input type="file" id="expenseFileInput" class="file-input" accept=".xlsx,.xls">
+                    <button class="upload-btn" onclick="document.getElementById('expenseFileInput').click()">
+                        파일 선택
+                    </button>
+                </div>
+                
+                <div id="expenseProgress" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="expenseProgressFill"></div>
+                    </div>
+                    <p id="expenseProgressText">업로드 진행 중...</p>
+                </div>
+                
+                <div id="expenseStatus"></div>
+                
+                <div class="data-preview" id="expensePreview" style="display: none;">
+                    <h3>데이터 미리보기</h3>
+                    <div class="table-scroll">
+                        <table class="preview-table" id="expensePreviewTable">
+                            <thead>
+                                <tr>
+                                    <th>현장</th>
+                                    <th>사용일</th>
+                                    <th>작업자</th>
+                                    <th>항목</th>
+                                    <th>금액</th>
+                                    <th>사용처</th>
+                                    <th>주소</th>
+                                    <th>메모</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="btn btn-success" id="btnProcessExpense" onclick="processExpenseData()">
+                            <i class="fas fa-check"></i> 데이터 처리
+                        </button>
+                        <button class="btn btn-warning" onclick="cleanExpenseData()">
+                            <i class="fas fa-broom"></i> 데이터 정리
+                        </button>
+                        <button class="btn btn-info" onclick="showExpenseDataIssues()">
+                            <i class="fas fa-exclamation-triangle"></i> 문제점 보기
+                        </button>
+                        <button class="btn btn-danger" onclick="clearExpenseData()">
+                            <i class="fas fa-times"></i> 초기화
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <link rel="manifest" href="admin-manifest.webmanifest">
+    <meta name="theme-color" content="#0068FE">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="관리자콘솔">
+    <link rel="apple-touch-icon" href="icon-192x192.png">
+    
+    <script src="admin-console.js"></script>
+</body>
+</html>

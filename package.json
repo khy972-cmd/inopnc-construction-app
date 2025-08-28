@@ -1,0 +1,42 @@
+{
+  "name": "construction-management-system",
+  "version": "1.0.0",
+  "description": "건설 현장 관리 시스템 - 작업자, 현장, 급여, 경비 관리",
+  "main": "index.html",
+  "scripts": {
+    "start": "http-server . -p 8080 -c-1",
+    "dev": "http-server . -p 8080 -c-1 --cors",
+    "build": "echo '빌드 스크립트는 현재 사용되지 않습니다.'",
+    "test": "echo '테스트 스크립트는 현재 사용되지 않습니다.'",
+    "lint": "echo '린트 스크립트는 현재 사용되지 않습니다.'"
+  },
+  "keywords": [
+    "construction",
+    "management",
+    "worker",
+    "salary",
+    "expense",
+    "site",
+    "admin",
+    "console"
+  ],
+  "author": "Construction Management Team",
+  "license": "MIT",
+  "dependencies": {
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/construction-management-system.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/construction-management-system/issues"
+  },
+  "homepage": "https://github.com/your-username/construction-management-system#readme"
+}

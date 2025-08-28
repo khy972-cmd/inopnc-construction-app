@@ -1,11 +1,11 @@
 {
-  "name": "건설관리 - 작업현장",
-  "short_name": "건설관리",
-  "description": "건설 현장 작업 및 경비 관리 시스템 - 작업자용",
-  "start_url": "/index.html",
+  "name": "건설관리 - 관리자콘솔",
+  "short_name": "관리자콘솔",
+  "description": "건설 현장 작업 및 경비 관리 시스템 - 관리자 전용",
+  "start_url": "/admin-console.html",
   "display": "standalone",
-  "background_color": "#28a745",
-  "theme_color": "#28a745",
+  "background_color": "#0068FE",
+  "theme_color": "#0068FE",
   "orientation": "portrait-primary",
   "scope": "/",
   "lang": "ko",
@@ -26,10 +26,10 @@
   ],
   "shortcuts": [
     {
-      "name": "작업 기록",
-      "short_name": "작업",
-      "description": "일일 작업 기록 입력",
-      "url": "/index.html#work",
+      "name": "작업자 관리",
+      "short_name": "작업자",
+      "description": "작업자 정보 관리",
+      "url": "/admin-console.html#workers",
       "icons": [
         {
           "src": "icon-192x192.png",
@@ -38,10 +38,10 @@
       ]
     },
     {
-      "name": "경비 기록",
-      "short_name": "경비",
-      "description": "경비 내역 입력",
-      "url": "/index.html#expense",
+      "name": "데이터 업로드",
+      "short_name": "업로드",
+      "description": "작업/경비 데이터 업로드",
+      "url": "/admin-console.html#upload",
       "icons": [
         {
           "src": "icon-192x192.png",

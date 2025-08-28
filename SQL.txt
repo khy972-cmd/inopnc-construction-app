@@ -1,309 +1,674 @@
--- =============================================================================
--- 이노프NC · 건설현장관리 기본 스키마(생성+교정+RLS) - Supabase용 단일 스크립트
--- =============================================================================
+BEGIN;
 
--- 0) 필수 확장
+-- =========================================================
+-- 0) 확장
+-- =========================================================
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- 1) 테이블 생성 (없을 때만)
+-- =========================================================
+-- 1) 표준 테이블 (없으면 생성) + 누락 컬럼 보강
+-- =========================================================
 CREATE TABLE IF NOT EXISTS public.workers (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  daily int4,  -- NULL 허용으로 변경
-  created_at timestamptz NOT NULL DEFAULT now()
+  id BIGSERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  daily           NUMERIC(12,2) DEFAULT 0,
+  hourly_rate     NUMERIC(10,2) DEFAULT 0,
+  monthly_salary  NUMERIC(12,2) DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+ALTER TABLE public.workers
+  ADD COLUMN IF NOT EXISTS name            VARCHAR(100),
+  ADD COLUMN IF NOT EXISTS daily           NUMERIC(12,2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS hourly_rate     NUMERIC(10,2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS monthly_salary  NUMERIC(12,2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS created_at      TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS updated_at      TIMESTAMPTZ;
+ALTER TABLE public.workers
+  ALTER COLUMN created_at SET DEFAULT NOW(),
+  ALTER COLUMN updated_at SET DEFAULT NOW();
 
 CREATE TABLE IF NOT EXISTS public.sites (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  company_name text,  -- NULL 허용
-  name text NOT NULL,
-  budget int4,  -- NULL 허용으로 변경
-  created_at timestamptz NOT NULL DEFAULT now()
+  id BIGSERIAL PRIMARY KEY,
+  name VARCHAR(200) NOT NULL,
+  address TEXT,
+  manager VARCHAR(100),
+  status TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+ALTER TABLE public.sites
+  ADD COLUMN IF NOT EXISTS name        VARCHAR(200),
+  ADD COLUMN IF NOT EXISTS address     TEXT,
+  ADD COLUMN IF NOT EXISTS manager     VARCHAR(100),
+  ADD COLUMN IF NOT EXISTS status      TEXT,
+  ADD COLUMN IF NOT EXISTS created_at  TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS updated_at  TIMESTAMPTZ;
+ALTER TABLE public.sites
+  ALTER COLUMN created_at SET DEFAULT NOW(),
+  ALTER COLUMN updated_at SET DEFAULT NOW(),
+  ALTER COLUMN status SET DEFAULT '';
 
-CREATE TABLE IF NOT EXISTS public.work_logs (
-  id text PRIMARY KEY,  -- 프론트에서 uid()로 생성해 넣음
-  date date NOT NULL,
-  site_id uuid NOT NULL REFERENCES public.sites(id) ON DELETE CASCADE,
-  worker_id uuid NOT NULL REFERENCES public.workers(id) ON DELETE CASCADE,
-  md numeric(4,1) NOT NULL DEFAULT 1.0,
-  note text,
-  created_at timestamptz NOT NULL DEFAULT now()
+CREATE TABLE IF NOT EXISTS public.work_records (
+  id BIGSERIAL PRIMARY KEY,
+  date DATE NOT NULL,
+  site VARCHAR(200) NOT NULL,
+  worker VARCHAR(100) NOT NULL,
+  days  NUMERIC(6,2) DEFAULT 0,
+  hours NUMERIC(6,2) DEFAULT 0,
+  memo  TEXT,
+  total_salary NUMERIC(12,2) DEFAULT 0,
+  tax          NUMERIC(12,2) DEFAULT 0,
+  net_salary   NUMERIC(12,2) DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+ALTER TABLE public.work_records
+  ADD COLUMN IF NOT EXISTS date         DATE,
+  ADD COLUMN IF NOT EXISTS site         VARCHAR(200),
+  ADD COLUMN IF NOT EXISTS worker       VARCHAR(100),
+  ADD COLUMN IF NOT EXISTS days         NUMERIC(6,2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS hours        NUMERIC(6,2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS memo         TEXT,
+  ADD COLUMN IF NOT EXISTS total_salary NUMERIC(12,2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS tax          NUMERIC(12,2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS net_salary   NUMERIC(12,2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS created_at   TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS updated_at   TIMESTAMPTZ;
+ALTER TABLE public.work_records
+  ALTER COLUMN created_at SET DEFAULT NOW(),
+  ALTER COLUMN updated_at SET DEFAULT NOW();
 
-CREATE TABLE IF NOT EXISTS public.expenses (
-  id text PRIMARY KEY,  -- 프론트에서 uid()로 생성해 넣음
-  date date NOT NULL,
-  site_id uuid NOT NULL REFERENCES public.sites(id) ON DELETE CASCADE,
-  worker_name text,  -- NULL 허용
-  category text,  -- NULL 허용
-  amount int4 NOT NULL DEFAULT 0,
-  vendor text,  -- NULL 허용
-  address text,  -- NULL 허용
-  memo text,  -- NULL 허용
-  created_at timestamptz NOT NULL DEFAULT now()
+CREATE TABLE IF NOT EXISTS public.expense_records (
+  id BIGSERIAL PRIMARY KEY,
+  date DATE NOT NULL,
+  site VARCHAR(200) NOT NULL,
+  worker   VARCHAR(100),
+  category VARCHAR(100) NOT NULL,
+  amount   NUMERIC(12,2) NOT NULL DEFAULT 0,
+  location VARCHAR(200),
+  address  TEXT,
+  memo     TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+ALTER TABLE public.expense_records
+  ADD COLUMN IF NOT EXISTS date       DATE,
+  ADD COLUMN IF NOT EXISTS site       VARCHAR(200),
+  ADD COLUMN IF NOT EXISTS worker     VARCHAR(100),
+  ADD COLUMN IF NOT EXISTS category   VARCHAR(100),
+  ADD COLUMN IF NOT EXISTS amount     NUMERIC(12,2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS location   VARCHAR(200),
+  ADD COLUMN IF NOT EXISTS address    TEXT,
+  ADD COLUMN IF NOT EXISTS memo       TEXT,
+  ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ;
+ALTER TABLE public.expense_records
+  ALTER COLUMN created_at SET DEFAULT NOW(),
+  ALTER COLUMN updated_at SET DEFAULT NOW();
 
--- Storage 버킷 생성 (영수증 파일용)
-INSERT INTO storage.buckets (id, name, public)
-VALUES (gen_random_uuid(), 'receipts', true)
-ON CONFLICT (name) DO NOTHING;
-
-CREATE TABLE IF NOT EXISTS public.receipts (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  expense_id text NOT NULL REFERENCES public.expenses(id) ON DELETE CASCADE,
-  file_name text,
-  file_url text,
-  created_at timestamptz NOT NULL DEFAULT now()
+CREATE TABLE IF NOT EXISTS public.system_config (
+  id BIGSERIAL PRIMARY KEY,
+  key VARCHAR(100) UNIQUE NOT NULL,
+  value TEXT,
+  description TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+ALTER TABLE public.system_config
+  ADD COLUMN IF NOT EXISTS key         VARCHAR(100),
+  ADD COLUMN IF NOT EXISTS value       TEXT,
+  ADD COLUMN IF NOT EXISTS description TEXT,
+  ADD COLUMN IF NOT EXISTS created_at  TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS updated_at  TIMESTAMPTZ;
+ALTER TABLE public.system_config
+  ALTER COLUMN created_at SET DEFAULT NOW(),
+  ALTER COLUMN updated_at SET DEFAULT NOW();
 
--- 2) 스키마 교정(이미 존재하는 컬럼/제약을 안전하게 수정)
+INSERT INTO public.system_config(key,value,description) VALUES
+('tax_rate','3.3','기본 세율(%)'),
+('default_daily_hours','8','1일 근무시간(시간)'),
+('default_business_days','30','월 환산 기준일수')
+ON CONFLICT (key) DO NOTHING;
+
+-- 기존 행 updated_at 백필
+UPDATE public.workers         SET updated_at = NOW() WHERE updated_at IS NULL;
+UPDATE public.sites           SET updated_at = NOW() WHERE updated_at IS NULL;
+UPDATE public.work_records    SET updated_at = NOW() WHERE updated_at IS NULL;
+UPDATE public.expense_records SET updated_at = NOW() WHERE updated_at IS NULL;
+UPDATE public.system_config   SET updated_at = NOW() WHERE updated_at IS NULL;
+
+-- =========================================================
+-- 2) 일반 인덱스
+-- =========================================================
+CREATE INDEX IF NOT EXISTS idx_workers_name   ON public.workers(name);
+CREATE INDEX IF NOT EXISTS idx_sites_name     ON public.sites(name);
+
+CREATE INDEX IF NOT EXISTS idx_wr_date        ON public.work_records(date);
+CREATE INDEX IF NOT EXISTS idx_wr_site        ON public.work_records(site);
+CREATE INDEX IF NOT EXISTS idx_wr_worker      ON public.work_records(worker);
+CREATE INDEX IF NOT EXISTS idx_wr_date_worker ON public.work_records(date, worker);
+
+CREATE INDEX IF NOT EXISTS idx_er_date        ON public.expense_records(date);
+CREATE INDEX IF NOT EXISTS idx_er_site        ON public.expense_records(site);
+CREATE INDEX IF NOT EXISTS idx_er_category    ON public.expense_records(category);
+
+-- =========================================================
+-- 2.5) 중복 정리 + 업서트용 UNIQUE 인덱스/제약(없으면 생성)
+-- =========================================================
+-- (a) workers(name), sites(name) 공백 정리
+UPDATE public.workers SET name = TRIM(name);
+UPDATE public.sites   SET name = TRIM(name);
+
+-- (b) workers 중복 제거(같은 name 한 개만 보존)
+WITH ranked AS (
+  SELECT id, name, ROW_NUMBER() OVER (PARTITION BY name ORDER BY id) rn
+  FROM public.workers
+)
+DELETE FROM public.workers w USING ranked r
+WHERE w.id=r.id AND r.rn>1;
+
+-- (c) sites 중복 제거(같은 name 한 개만 보존)
+WITH ranked AS (
+  SELECT id, name, ROW_NUMBER() OVER (PARTITION BY name ORDER BY id) rn
+  FROM public.sites
+)
+DELETE FROM public.sites s USING ranked r
+WHERE s.id=r.id AND r.rn>1;
+
+-- (d) UNIQUE 제약 보강(없으면 추가)
 DO $$
-DECLARE
-  _has boolean;
 BEGIN
-  -- (A) sites.companyname -> company_name 으로 표준화
-  SELECT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_schema='public' AND table_name='sites' AND column_name='companyname'
-  ) INTO _has;
-  IF _has THEN
-    BEGIN
-      ALTER TABLE public.sites RENAME COLUMN companyname TO company_name;
-    EXCEPTION WHEN OTHERS THEN NULL;
-    END;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname='uk_workers_name'
+      AND conrelid='public.workers'::regclass
+  ) THEN
+    ALTER TABLE public.workers
+      ADD CONSTRAINT uk_workers_name UNIQUE(name);
   END IF;
 
-  -- (B) company_name 컬럼이 없으면 추가
-  SELECT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_schema='public' AND table_name='sites' AND column_name='company_name'
-  ) INTO _has;
-  IF NOT _has THEN
-    ALTER TABLE public.sites ADD COLUMN company_name text;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname='uk_sites_name'
+      AND conrelid='public.sites'::regclass
+  ) THEN
+    ALTER TABLE public.sites
+      ADD CONSTRAINT uk_sites_name UNIQUE(name);
   END IF;
-
-  -- (C) company_name NOT NULL 제약 해제
-  BEGIN
-    ALTER TABLE public.sites ALTER COLUMN company_name DROP NOT NULL;
-  EXCEPTION WHEN OTHERS THEN NULL; END;
-
-  -- (D) workers.daily NOT NULL 제약 해제
-  BEGIN
-    ALTER TABLE public.workers ALTER COLUMN daily DROP NOT NULL;
-  EXCEPTION WHEN OTHERS THEN NULL; END;
-
-  -- (E) sites.budget NOT NULL 제약 해제
-  BEGIN
-    ALTER TABLE public.sites ALTER COLUMN budget DROP NOT NULL;
-  EXCEPTION WHEN OTHERS THEN NULL; END;
-
-  -- expenses.id 타입 교정
-  SELECT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_schema='public' AND table_name='expenses'
-      AND column_name='id' AND data_type='uuid'
-  ) INTO _has;
-  IF _has THEN
-    BEGIN
-      ALTER TABLE IF EXISTS public.receipts
-        DROP CONSTRAINT IF EXISTS receipts_expense_id_fkey;
-    EXCEPTION WHEN OTHERS THEN NULL; END;
-
-    ALTER TABLE public.expenses
-      ALTER COLUMN id TYPE text USING id::text;
-    ALTER TABLE public.expenses ALTER COLUMN id DROP DEFAULT;
-
-    ALTER TABLE IF EXISTS public.receipts
-      ADD CONSTRAINT receipts_expense_id_fkey
-      FOREIGN KEY (expense_id) REFERENCES public.expenses(id) ON DELETE CASCADE;
-  END IF;
-
-  -- expenses.id 기본값 제거
-  SELECT EXISTS (
-    SELECT 1
-    FROM pg_attrdef d
-    JOIN pg_class c ON c.oid = d.adrelid
-    JOIN pg_namespace n ON n.oid = c.relnamespace
-    JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = d.adnum
-    WHERE n.nspname='public' AND c.relname='expenses' AND a.attname='id'
-      AND pg_get_expr(d.adbin, d.adrelid) LIKE '%gen_random_uuid%'
-  ) INTO _has;
-  IF _has THEN
-    ALTER TABLE public.expenses ALTER COLUMN id DROP DEFAULT;
-  END IF;
-
-  -- receipts.expense_id 타입 교정
-  SELECT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_schema='public' AND table_name='receipts'
-      AND column_name='expense_id' AND data_type='uuid'
-  ) INTO _has;
-  IF _has THEN
-    ALTER TABLE public.receipts DROP CONSTRAINT IF EXISTS receipts_expense_id_fkey;
-    ALTER TABLE public.receipts
-      ALTER COLUMN expense_id TYPE text USING expense_id::text;
-    ALTER TABLE public.receipts
-      ADD CONSTRAINT receipts_expense_id_fkey
-      FOREIGN KEY (expense_id) REFERENCES public.expenses(id) ON DELETE CASCADE;
-  END IF;
-
-  -- receipts.data 컬럼 제거
-  SELECT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_schema='public' AND table_name='receipts' AND column_name='data'
-  ) INTO _has;
-  IF _has THEN
-    ALTER TABLE public.receipts DROP COLUMN data;
-  END IF;
-
-  -- receipts.file_url 컬럼 추가
-  SELECT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_schema='public' AND table_name='receipts' AND column_name='file_url'
-  ) INTO _has;
-  IF NOT _has THEN
-    ALTER TABLE public.receipts ADD COLUMN file_url text;
-  END IF;
-
-  -- work_logs.id 타입 교정
-  SELECT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_schema='public' AND table_name='work_logs'
-      AND column_name='id' AND data_type <> 'text'
-  ) INTO _has;
-  IF _has THEN
-    ALTER TABLE public.work_logs
-      ALTER COLUMN id TYPE text USING id::text;
-  END IF;
-
-  -- sites.id / workers.id 타입 교정
-  SELECT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_schema='public' AND table_name='sites'
-      AND column_name='id' AND data_type <> 'uuid'
-  ) INTO _has;
-  IF _has THEN
-    ALTER TABLE public.sites ALTER COLUMN id TYPE uuid USING id::uuid;
-  END IF;
-
-  SELECT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_schema='public' AND table_name='workers'
-      AND column_name='id' AND data_type <> 'uuid'
-  ) INTO _has;
-  IF _has THEN
-    ALTER TABLE public.workers ALTER COLUMN id TYPE uuid USING id::uuid;
-  END IF;
-
-  -- FK 재확인
-  BEGIN
-    ALTER TABLE IF EXISTS public.work_logs DROP CONSTRAINT IF EXISTS work_logs_site_id_fkey;
-  EXCEPTION WHEN OTHERS THEN NULL; END;
-  ALTER TABLE public.work_logs
-    ADD CONSTRAINT work_logs_site_id_fkey
-    FOREIGN KEY (site_id) REFERENCES public.sites(id) ON DELETE CASCADE;
-
-  BEGIN
-    ALTER TABLE IF EXISTS public.work_logs DROP CONSTRAINT IF EXISTS work_logs_worker_id_fkey;
-  EXCEPTION WHEN OTHERS THEN NULL; END;
-  ALTER TABLE public.work_logs
-    ADD CONSTRAINT work_logs_worker_id_fkey
-    FOREIGN KEY (worker_id) REFERENCES public.workers(id) ON DELETE CASCADE;
 END$$;
 
--- 3) 인덱스
-CREATE INDEX IF NOT EXISTS idx_work_logs_date   ON public.work_logs(date);
-CREATE INDEX IF NOT EXISTS idx_work_logs_site   ON public.work_logs(site_id);
-CREATE INDEX IF NOT EXISTS idx_work_logs_worker ON public.work_logs(worker_id);
-CREATE INDEX IF NOT EXISTS idx_expenses_date    ON public.expenses(date);
-CREATE INDEX IF NOT EXISTS idx_expenses_site    ON public.expenses(site_id);
+-- (e) work_records / expense_records 중복 정리
+DELETE FROM public.work_records wr
+USING (
+  SELECT date, site, worker, MAX(id) keep_id
+  FROM public.work_records
+  GROUP BY 1,2,3
+  HAVING COUNT(*)>1
+) d
+WHERE wr.date=d.date AND wr.site=d.site AND wr.worker=d.worker AND wr.id<>d.keep_id;
 
--- 4) RLS 활성화
-ALTER TABLE public.workers   ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.sites     ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.work_logs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.expenses  ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.receipts  ENABLE ROW LEVEL SECURITY;
+DELETE FROM public.expense_records er
+USING (
+  SELECT date, site, category, amount, MAX(id) keep_id
+  FROM public.expense_records
+  GROUP BY 1,2,3,4
+  HAVING COUNT(*)>1
+) d
+WHERE er.date=d.date AND er.site=d.site AND er.category=d.category AND er.amount=d.amount AND er.id<>d.keep_id;
 
--- 5) 정책 생성
+-- (f) 업서트용 UNIQUE 인덱스 + 제약(없으면 생성)
 DO $$
 BEGIN
-  -- workers
-  BEGIN
-    CREATE POLICY all_select ON public.workers FOR SELECT TO anon, authenticated USING (true);
-  EXCEPTION WHEN OTHERS THEN NULL; END;
-  BEGIN
-    CREATE POLICY all_insert ON public.workers FOR INSERT TO anon, authenticated WITH CHECK (true);
-  EXCEPTION WHEN OTHERS THEN NULL; END;
-  BEGIN
-    CREATE POLICY all_update ON public.workers FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
-  EXCEPTION WHEN OTHERS THEN NULL; END;
-  BEGIN
-    CREATE POLICY all_delete ON public.workers FOR DELETE TO anon, authenticated USING (true);
-  EXCEPTION WHEN OTHERS THEN NULL; END;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes
+    WHERE schemaname='public' AND indexname='uq_work_records_date_site_worker'
+  ) THEN
+    CREATE UNIQUE INDEX uq_work_records_date_site_worker
+      ON public.work_records(date, site, worker);
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname='uk_work_records_date_site_worker'
+      AND conrelid='public.work_records'::regclass
+  ) THEN
+    ALTER TABLE public.work_records
+      ADD CONSTRAINT uk_work_records_date_site_worker
+      UNIQUE USING INDEX uq_work_records_date_site_worker;
+  END IF;
 
-  -- sites
-  BEGIN
-    CREATE POLICY all_select ON public.sites FOR SELECT TO anon, authenticated USING (true);
-  EXCEPTION WHEN OTHERS THEN NULL; END;
-  BEGIN
-    CREATE POLICY all_insert ON public.sites FOR INSERT TO anon, authenticated WITH CHECK (true);
-  EXCEPTION WHEN OTHERS THEN NULL; END;
-  BEGIN
-    CREATE POLICY all_update ON public.sites FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
-  EXCEPTION WHEN OTHERS THEN NULL; END;
-  BEGIN
-    CREATE POLICY all_delete ON public.sites FOR DELETE TO anon, authenticated USING (true);
-  EXCEPTION WHEN OTHERS THEN NULL; END;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes
+    WHERE schemaname='public' AND indexname='uq_expense_records_date_site_category_amount'
+  ) THEN
+    CREATE UNIQUE INDEX uq_expense_records_date_site_category_amount
+      ON public.expense_records(date, site, category, amount);
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname='uk_expense_records_date_site_category_amount'
+      AND conrelid='public.expense_records'::regclass
+  ) THEN
+    ALTER TABLE public.expense_records
+      ADD CONSTRAINT uk_expense_records_date_site_category_amount
+      UNIQUE USING INDEX uq_expense_records_date_site_category_amount;
+  END IF;
+END$$;
 
-  -- work_logs
-  BEGIN
-    CREATE POLICY all_select ON public.work_logs FOR SELECT TO anon, authenticated USING (true);
-  EXCEPTION WHEN OTHERS THEN NULL; END;
-  BEGIN
-    CREATE POLICY all_insert ON public.work_logs FOR INSERT TO anon, authenticated WITH CHECK (true);
-  EXCEPTION WHEN OTHERS THEN NULL; END;
-  BEGIN
-    CREATE POLICY all_update ON public.work_logs FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
-  EXCEPTION WHEN OTHERS THEN NULL; END;
-  BEGIN
-    CREATE POLICY all_delete ON public.work_logs FOR DELETE TO anon, authenticated USING (true);
-  EXCEPTION WHEN OTHERS THEN NULL; END;
+-- =========================================================
+-- 3) RLS (정책은 일단 전원 허용; 운영 시 강화 권장)
+-- =========================================================
+ALTER TABLE public.workers         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.sites           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.work_records    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.expense_records ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.system_config   ENABLE ROW LEVEL SECURITY;
 
-  -- expenses
-  BEGIN
-    CREATE POLICY all_select ON public.expenses FOR SELECT TO anon, authenticated USING (true);
-  EXCEPTION WHEN OTHERS THEN NULL; END;
-  BEGIN
-    CREATE POLICY all_insert ON public.expenses FOR INSERT TO anon, authenticated WITH CHECK (true);
-  EXCEPTION WHEN OTHERS THEN NULL; END;
-  BEGIN
-    CREATE POLICY all_update ON public.expenses FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
-  EXCEPTION WHEN OTHERS THEN NULL; END;
-  BEGIN
-    CREATE POLICY all_delete ON public.expenses FOR DELETE TO anon, authenticated USING (true);
-  EXCEPTION WHEN OTHERS THEN NULL; END;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='workers') THEN
+    CREATE POLICY "all select" ON public.workers  FOR SELECT USING (true);
+    CREATE POLICY "all insert" ON public.workers  FOR INSERT WITH CHECK (true);
+    CREATE POLICY "all update" ON public.workers  FOR UPDATE USING (true);
+    CREATE POLICY "all delete" ON public.workers  FOR DELETE USING (true);
+  END IF;
 
-  -- receipts
-  BEGIN
-    CREATE POLICY all_select ON public.receipts FOR SELECT TO anon, authenticated USING (true);
-  EXCEPTION WHEN OTHERS THEN NULL; END;
-  BEGIN
-    CREATE POLICY all_insert ON public.receipts FOR INSERT TO anon, authenticated WITH CHECK (true);
-  EXCEPTION WHEN OTHERS THEN NULL; END;
-  BEGIN
-    CREATE POLICY all_delete ON public.receipts FOR DELETE TO anon, authenticated USING (true);
-  EXCEPTION WHEN OTHERS THEN NULL; END;
-END
-$$;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='sites') THEN
+    CREATE POLICY "all select" ON public.sites    FOR SELECT USING (true);
+    CREATE POLICY "all insert" ON public.sites    FOR INSERT WITH CHECK (true);
+    CREATE POLICY "all update" ON public.sites    FOR UPDATE USING (true);
+    CREATE POLICY "all delete" ON public.sites    FOR DELETE USING (true);
+  END IF;
 
--- 6) 샘플 데이터 (선택사항)
--- INSERT INTO public.workers (name, daily) VALUES 
---   ('김작업', 150000),
---   ('이작업', 140000),
---   ('박작업', 160000);
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='work_records') THEN
+    CREATE POLICY "all select" ON public.work_records FOR SELECT USING (true);
+    CREATE POLICY "all insert" ON public.work_records FOR INSERT WITH CHECK (true);
+    CREATE POLICY "all update" ON public.work_records FOR UPDATE USING (true);
+    CREATE POLICY "all delete" ON public.work_records FOR DELETE USING (true);
+  END IF;
 
--- INSERT INTO public.sites (company_name, name, budget) VALUES 
---   ('이노프NC', '서울시 강남구 현장', 50000000),
---   ('이노프NC', '서울시 서초구 현장', 30000000);
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='expense_records') THEN
+    CREATE POLICY "all select" ON public.expense_records FOR SELECT USING (true);
+    CREATE POLICY "all insert" ON public.expense_records FOR INSERT WITH CHECK (true);
+    CREATE POLICY "all update" ON public.expense_records FOR UPDATE USING (true);
+    CREATE POLICY "all delete" ON public.expense_records FOR DELETE USING (true);
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='system_config') THEN
+    CREATE POLICY "all select" ON public.system_config FOR SELECT USING (true);
+    CREATE POLICY "all insert" ON public.system_config FOR INSERT WITH CHECK (true);
+    CREATE POLICY "all update" ON public.system_config FOR UPDATE USING (true);
+    CREATE POLICY "all delete" ON public.system_config FOR DELETE USING (true);
+  END IF;
+END$$;
+
+-- =========================================================
+-- 4) 트리거 함수 + 트리거
+-- =========================================================
+-- updated_at 안전 갱신(해당 컬럼이 있을 때만)
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = TG_TABLE_SCHEMA
+      AND table_name   = TG_TABLE_NAME
+      AND column_name  = 'updated_at'
+  ) THEN
+    NEW.updated_at := NOW();
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 급여 계산: 일당 > 시급×일기준시간 > 월급÷월기준일수
+CREATE OR REPLACE FUNCTION public.calculate_work_salary()
+RETURNS TRIGGER AS $$
+DECLARE
+  dl NUMERIC(12,2) := 0;
+  hr NUMERIC(12,2) := 0;
+  ms NUMERIC(12,2) := 0;
+  daily_equiv NUMERIC(12,2) := 0;
+  tax_rate NUMERIC(6,3) := COALESCE((SELECT value::numeric FROM public.system_config WHERE key='tax_rate' LIMIT 1), 3.3);
+  daily_hours NUMERIC(6,2) := COALESCE((SELECT value::numeric FROM public.system_config WHERE key='default_daily_hours' LIMIT 1), 8);
+  business_days NUMERIC(6,2) := COALESCE((SELECT value::numeric FROM public.system_config WHERE key='default_business_days' LIMIT 1), 30);
+BEGIN
+  SELECT COALESCE(daily,0), COALESCE(hourly_rate,0), COALESCE(monthly_salary,0)
+    INTO dl, hr, ms
+    FROM public.workers
+   WHERE name = NEW.worker
+   LIMIT 1;
+
+  IF dl > 0 THEN
+    daily_equiv := dl;
+  ELSIF hr > 0 THEN
+    daily_equiv := hr * daily_hours;
+  ELSIF ms > 0 THEN
+    daily_equiv := ms / NULLIF(business_days,0);
+  ELSE
+    daily_equiv := 0;
+  END IF;
+
+  IF COALESCE(NEW.days,0)=0 AND COALESCE(NEW.hours,0)>0 THEN
+    NEW.days := NEW.hours / NULLIF(daily_hours,0);
+  END IF;
+
+  NEW.total_salary := COALESCE(NEW.days,0) * COALESCE(daily_equiv,0);
+  NEW.tax          := NEW.total_salary * (tax_rate/100.0);
+  NEW.net_salary   := NEW.total_salary - NEW.tax;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 트리거 부착(없으면 생성)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname='trigger_calculate_work_salary') THEN
+    CREATE TRIGGER trigger_calculate_work_salary
+      BEFORE INSERT OR UPDATE ON public.work_records
+      FOR EACH ROW EXECUTE FUNCTION public.calculate_work_salary();
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname='trigger_update_work_records_updated_at') THEN
+    CREATE TRIGGER trigger_update_work_records_updated_at
+      BEFORE UPDATE ON public.work_records
+      FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname='trigger_update_expense_records_updated_at') THEN
+    CREATE TRIGGER trigger_update_expense_records_updated_at
+      BEFORE UPDATE ON public.expense_records
+      FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname='trigger_update_workers_updated_at') THEN
+    CREATE TRIGGER trigger_update_workers_updated_at
+      BEFORE UPDATE ON public.workers
+      FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname='trigger_update_sites_updated_at') THEN
+    CREATE TRIGGER trigger_update_sites_updated_at
+      BEFORE UPDATE ON public.sites
+      FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+  END IF;
+END$$;
+
+-- 품질 체크 제약(음수 금지)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='ck_work_records_nonneg') THEN
+    ALTER TABLE public.work_records
+      ADD CONSTRAINT ck_work_records_nonneg CHECK (COALESCE(days,0) >= 0 AND COALESCE(hours,0) >= 0);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='ck_expense_records_amount_nonneg') THEN
+    ALTER TABLE public.expense_records
+      ADD CONSTRAINT ck_expense_records_amount_nonneg CHECK (amount >= 0);
+  END IF;
+END$$;
+
+-- =========================================================
+-- 5) (선택) 한글 테이블 → 표준 테이블 백필(있을 때만)
+-- =========================================================
+-- 노동자 → workers
+DO $$
+DECLARE has_kor boolean := EXISTS(SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='노동자');
+        name_col text; daily_col text; hr_col text; ms_col text; sql text;
+BEGIN
+  IF NOT has_kor THEN RETURN; END IF;
+
+  SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='노동자' AND column_name='name') THEN 'name'
+              WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='노동자' AND column_name='이름') THEN '"이름"'
+              WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='노동자' AND column_name='성명') THEN '"성명"' END INTO name_col;
+
+  SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='노동자' AND column_name='daily') THEN 'daily'
+              WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='노동자' AND column_name='일당') THEN '"일당"'
+              WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='노동자' AND column_name='일급') THEN '"일급"' END INTO daily_col;
+
+  SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='노동자' AND column_name='hourly_rate') THEN 'hourly_rate'
+              WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='노동자' AND column_name='시급') THEN '"시급"' END INTO hr_col;
+
+  SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='노동자' AND column_name='monthly_salary') THEN 'monthly_salary'
+              WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='노동자' AND column_name='월급') THEN '"월급"' END INTO ms_col;
+
+  IF name_col IS NULL THEN RETURN; END IF;
+
+  sql := format($f$
+    INSERT INTO public.workers(name, daily, hourly_rate, monthly_salary)
+    SELECT %s,
+           COALESCE(NULLIF(%s,0),0),
+           COALESCE(NULLIF(%s,0),0),
+           COALESCE(NULLIF(%s,0),0)
+    FROM public."노동자"
+    ON CONFLICT (name) DO UPDATE SET
+      daily          = COALESCE(EXCLUDED.daily, public.workers.daily),
+      hourly_rate    = COALESCE(EXCLUDED.hourly_rate, public.workers.hourly_rate),
+      monthly_salary = COALESCE(EXCLUDED.monthly_salary, public.workers.monthly_salary);
+  $f$, name_col, COALESCE(daily_col,'0'), COALESCE(hr_col,'0'), COALESCE(ms_col,'0'));
+  EXECUTE sql;
+END$$;
+
+-- 사이트 → sites
+DO $$
+DECLARE has_kor boolean := EXISTS(SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='사이트');
+        name_col text; addr_col text; mgr_col text; sql text;
+BEGIN
+  IF NOT has_kor THEN RETURN; END IF;
+
+  SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='사이트' AND column_name='name') THEN 'name'
+              WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='사이트' AND column_name='현장명') THEN '"현장명"'
+              WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='사이트' AND column_name='이름') THEN '"이름"' END INTO name_col;
+
+  SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='사이트' AND column_name='address') THEN 'address'
+              WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='사이트' AND column_name='주소') THEN '"주소"' END INTO addr_col;
+
+  SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='사이트' AND column_name='manager') THEN 'manager'
+              WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='사이트' AND column_name='담당자') THEN '"담당자"' END INTO mgr_col;
+
+  IF name_col IS NULL THEN RETURN; END IF;
+
+  sql := format($f$
+    INSERT INTO public.sites(name, address, manager)
+    SELECT %s, %s, %s
+    FROM public."사이트"
+    ON CONFLICT (name) DO UPDATE SET
+      address = COALESCE(EXCLUDED.address, public.sites.address),
+      manager = COALESCE(EXCLUDED.manager, public.sites.manager);
+  $f$, name_col, COALESCE(addr_col,'NULL'), COALESCE(mgr_col,'NULL'));
+  EXECUTE sql;
+END$$;
+
+-- 경비 → expense_records
+DO $$
+DECLARE has_kor boolean := EXISTS(SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='경비');
+        d_col text; site_col text; worker_col text; cat_col text; amt_col text; loc_col text; addr_col text; memo_col text; sql text;
+BEGIN
+  IF NOT has_kor THEN RETURN; END IF;
+
+  SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='경비' AND column_name='date') THEN 'date'
+              WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='경비' AND column_name='일자') THEN '"일자"'
+              WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='경비' AND column_name='사용일') THEN '"사용일"' END INTO d_col;
+
+  SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='경비' AND column_name='site') THEN 'site'
+              WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='경비' AND column_name='현장명') THEN '"현장명"'
+              WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='경비' AND column_name='사이트') THEN '"사이트"' END INTO site_col;
+
+  SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='경비' AND column_name='worker') THEN 'worker'
+              WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='경비' AND column_name='작업자') THEN '"작업자"' END INTO worker_col;
+
+  SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='경비' AND column_name='category') THEN 'category'
+              WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='경비' AND column_name='항목') THEN '"항목"' END INTO cat_col;
+
+  SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='경비' AND column_name='amount') THEN 'amount'
+              WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='경비' AND column_name='금액') THEN '"금액"' END INTO amt_col;
+
+  SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='경비' AND column_name='location') THEN 'location'
+              WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='경비' AND column_name='사용처') THEN '"사용처"'
+              WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='경비' AND column_name='vendor') THEN 'vendor' END INTO loc_col;
+
+  SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='경비' AND column_name='address') THEN 'address'
+              WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='경비' AND column_name='주소') THEN '"주소"' END INTO addr_col;
+
+  SELECT CASE WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='경비' AND column_name='memo') THEN 'memo'
+              WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='경비' AND column_name='비고') THEN '"비고"'
+              WHEN EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='경비' AND column_name='메모') THEN '"메모"' END INTO memo_col;
+
+  IF d_col IS NULL OR site_col IS NULL OR cat_col IS NULL OR amt_col IS NULL THEN RETURN; END IF;
+
+  sql := format($f$
+    INSERT INTO public.expense_records(date, site, worker, category, amount, location, address, memo)
+    SELECT %s::date, %s, %s, %s, (%s)::numeric(12,2), %s, %s, %s
+    FROM public."경비"
+    ON CONFLICT (date, site, category, amount) DO NOTHING;
+  $f$, d_col, site_col, COALESCE(worker_col,'NULL'), cat_col, amt_col, COALESCE(loc_col,'NULL'), COALESCE(addr_col,'NULL'), COALESCE(memo_col,'NULL'));
+  EXECUTE sql;
+END$$;
+
+-- =========================================================
+-- 6) 기존 시스템 테이블 → 표준 테이블 이관(있을 때만)
+-- =========================================================
+-- work_logs → work_records
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='work_logs')
+     AND EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='workers')
+     AND EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='sites')
+  THEN
+    INSERT INTO public.work_records (date, site, worker, days, memo)
+    SELECT wl.date, s.name AS site, w.name AS worker,
+           wl.md::NUMERIC(6,2) AS days, wl.note AS memo
+    FROM public.work_logs wl
+    JOIN public.sites   s ON wl.site_id = s.id
+    JOIN public.workers w ON wl.worker_id = w.id
+    ON CONFLICT (date, site, worker)
+    DO UPDATE SET
+      days = EXCLUDED.days,
+      memo = COALESCE(EXCLUDED.memo, public.work_records.memo);
+  END IF;
+END$$;
+
+-- expenses → expense_records
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='expenses')
+     AND EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='sites')
+  THEN
+    INSERT INTO public.expense_records (date, site, worker, category, amount, location, address, memo)
+    SELECT e.date, s.name AS site, e.worker_name AS worker,
+           COALESCE(e.category,'') AS category,
+           e.amount::NUMERIC(12,2),
+           e.vendor AS location, e.address, e.memo
+    FROM public.expenses e
+    JOIN public.sites   s ON e.site_id = s.id
+    ON CONFLICT (date, site, category, amount) DO NOTHING;
+  END IF;
+END$$;
+
+-- =========================================================
+-- 7) 헬퍼 함수 (옵션 A: 바로 표준 테이블에 입력)
+-- =========================================================
+-- 단건 작업 입력
+CREATE OR REPLACE FUNCTION public.log_work(
+  p_date   date,
+  p_site   text,
+  p_worker text,
+  p_days   numeric DEFAULT NULL,
+  p_hours  numeric DEFAULT NULL,
+  p_memo   text   DEFAULT NULL
+) RETURNS public.work_records
+LANGUAGE plpgsql AS $$
+DECLARE v_rec public.work_records;
+BEGIN
+  p_site   := TRIM(p_site);
+  p_worker := TRIM(p_worker);
+
+  INSERT INTO public.sites(name)   VALUES (p_site)   ON CONFLICT (name) DO NOTHING;
+  INSERT INTO public.workers(name) VALUES (p_worker) ON CONFLICT (name) DO NOTHING;
+
+  INSERT INTO public.work_records(date, site, worker, days, hours, memo)
+  VALUES (p_date, p_site, p_worker, p_days, p_hours, p_memo)
+  ON CONFLICT (date, site, worker) DO UPDATE
+    SET days  = COALESCE(EXCLUDED.days,  public.work_records.days),
+        hours = COALESCE(EXCLUDED.hours, public.work_records.hours),
+        memo  = COALESCE(EXCLUDED.memo,  public.work_records.memo)
+  RETURNING * INTO v_rec;
+
+  RETURN v_rec;
+END; $$;
+
+-- 단건 경비 입력
+CREATE OR REPLACE FUNCTION public.log_expense(
+  p_date     date,
+  p_site     text,
+  p_category text,
+  p_amount   numeric,
+  p_worker   text DEFAULT NULL,
+  p_location text DEFAULT NULL,
+  p_address  text DEFAULT NULL,
+  p_memo     text DEFAULT NULL
+) RETURNS public.expense_records
+LANGUAGE plpgsql AS $$
+DECLARE v_rec public.expense_records;
+BEGIN
+  p_site := TRIM(p_site);
+  INSERT INTO public.sites(name) VALUES (p_site) ON CONFLICT (name) DO NOTHING;
+
+  INSERT INTO public.expense_records(date, site, worker, category, amount, location, address, memo)
+  VALUES (p_date, p_site, NULLIF(TRIM(COALESCE(p_worker,'')),''),
+          p_category, p_amount, p_location, p_address, p_memo)
+  ON CONFLICT (date, site, category, amount) DO NOTHING
+  RETURNING * INTO v_rec;
+
+  RETURN v_rec;
+END; $$;
+
+-- 벌크 입력
+CREATE OR REPLACE FUNCTION public.bulk_log_work(p_rows jsonb)
+RETURNS integer LANGUAGE plpgsql AS $$
+DECLARE r jsonb; cnt int:=0;
+BEGIN
+  FOR r IN SELECT * FROM jsonb_array_elements(p_rows) LOOP
+    PERFORM public.log_work(
+      (r->>'date')::date,
+      r->>'site',
+      r->>'worker',
+      NULLIF(r->>'days','')::numeric,
+      NULLIF(r->>'hours','')::numeric,
+      r->>'memo'
+    );
+    cnt := cnt + 1;
+  END LOOP;
+  RETURN cnt;
+END; $$;
+
+CREATE OR REPLACE FUNCTION public.bulk_log_expense(p_rows jsonb)
+RETURNS integer LANGUAGE plpgsql AS $$
+DECLARE r jsonb; cnt int:=0;
+BEGIN
+  FOR r IN SELECT * FROM jsonb_array_elements(p_rows) LOOP
+    PERFORM public.log_expense(
+      (r->>'date')::date,
+      r->>'site',
+      r->>'category',
+      (r->>'amount')::numeric,
+      r->>'worker',
+      r->>'location',
+      r->>'address',
+      r->>'memo'
+    );
+    cnt := cnt + 1;
+  END LOOP;
+  RETURN cnt;
+END; $$;
+
+-- (선택) 재계산 헬퍼
+CREATE OR REPLACE FUNCTION public.recalc_work_records(p_from DATE, p_to DATE)
+RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
+  UPDATE public.work_records wr
+     SET memo = wr.memo
+   WHERE wr.date BETWEEN p_from AND p_to;
+END; $$;
+
+COMMIT;
