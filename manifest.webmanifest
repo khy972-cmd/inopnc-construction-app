@@ -1,53 +1,21 @@
 {
-  "name": "건설관리 - 작업현장",
-  "short_name": "건설관리",
-  "description": "건설 현장 작업 및 경비 관리 시스템 - 작업자용",
-  "start_url": "/index.html",
-  "display": "standalone",
-  "background_color": "#28a745",
-  "theme_color": "#28a745",
-  "orientation": "portrait-primary",
+  "name": "INOPNC · 건설현장관리",
+  "short_name": "INOPNC",
+  "start_url": "/",
   "scope": "/",
-  "lang": "ko",
-  "categories": ["business", "productivity"],
+  "display": "standalone",
+  "background_color": "#0068FE",
+  "theme_color": "#0068FE",
   "icons": [
     {
-      "src": "icon-192x192.png",
+      "src": "/apple-touch-icon-180.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     },
     {
-      "src": "icon-512x512.png",
+      "src": "/icon-512x512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "작업 기록",
-      "short_name": "작업",
-      "description": "일일 작업 기록 입력",
-      "url": "/index.html#work",
-      "icons": [
-        {
-          "src": "icon-192x192.png",
-          "sizes": "192x192"
-        }
-      ]
-    },
-    {
-      "name": "경비 기록",
-      "short_name": "경비",
-      "description": "경비 내역 입력",
-      "url": "/index.html#expense",
-      "icons": [
-        {
-          "src": "icon-192x192.png",
-          "sizes": "192x192"
-        }
-      ]
+      "type": "image/png"
     }
   ]
 }

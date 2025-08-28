@@ -1,24 +1,26 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>오프라인 상태</title>
-<style>
-  body{font-family:system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, sans-serif; margin:0; padding:24px; background:#f6f8fb; color:#111827;}
-  .card{max-width:520px; margin:40px auto; background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:24px; box-shadow:0 1px 4px rgba(0,0,0,0.06);}
-  h1{font-size:20px; margin:0 0 8px;}
-  p{line-height:1.6; margin:8px 0;}
-  code{background:#f3f4f6; padding:2px 6px; border-radius:6px;}
-  .muted{color:#6b7280; font-size:14px;}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>오프라인 | INOPNC</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Apple Color Emoji,Noto Color Emoji,Helvetica,Arial,sans-serif;
+         margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;background:#f6f8fb;color:#111827}
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.06);
+          padding:24px;max-width:560px;text-align:center}
+    h1{margin:0 0 8px 0;font-size:20px;color:#0068FE}
+    p{margin:8px 0 0 0;font-size:14px;color:#374151}
+    small{display:block;margin-top:12px;color:#6b7280}
+    .btn{display:inline-block;margin-top:16px;padding:10px 14px;border-radius:8px;border:1px solid #0068FE;color:#0068FE;text-decoration:none}
+  </style>
 </head>
 <body>
   <div class="card">
     <h1>오프라인 상태입니다</h1>
-    <p>네트워크 연결이 없어 <strong>최신 데이터</strong>를 불러오지 못했습니다.</p>
-    <p class="muted">다음 후에 다시 시도해주세요. 연결이 복구되면 자동으로 최신 화면이 표시됩니다.</p>
-    <p>캐시를 초기화하려면 상단의 <code>새로고침/캐시 삭제</code> 버튼을 사용하세요.</p>
+    <p>인터넷 연결이 끊어져 있어요. 연결되면 다시 시도해 주세요.</p>
+    <a class="btn" href="/">홈으로 가기</a>
+    <small>INOPNC · PWA 오프라인 페이지</small>
   </div>
 </body>
 </html>

@@ -27,6 +27,9 @@ class AdminConsole {
         this.loadWorkers();
         this.loadSites();
         await this.initSupabase();
+        
+
+
     }
 
     // index.html의 db.workers가 로드될 때까지 대기
@@ -59,12 +62,11 @@ class AdminConsole {
             window.db.workers.forEach(indexWorker => {
                 const existingWorker = this.workers.find(w => w.name === indexWorker.name);
                 if (!existingWorker) {
-                    // index.html의 구조에 맞게 변환 (daily를 hourlyRate로 변환)
+                    // index.html의 구조에 맞게 변환
                     const newWorker = {
                         id: Date.now() + Math.random(), // 고유 ID 생성
                         name: indexWorker.name,
                         daily: indexWorker.daily || 0,
-                        hourlyRate: indexWorker.daily ? indexWorker.daily / 8 : 0, // 일당을 8시간으로 나누어 시간당 단가 계산
                         monthlySalary: 0,
                         timestamp: new Date().toISOString()
                     };
@@ -335,8 +337,8 @@ class AdminConsole {
         
         tbody.innerHTML = '';
         
-        data.slice(0, 10).forEach(row => {
-            // 급여 계산 (작업자 기본급 × 공수)
+        data.slice(0, 10).forEach((row, index) => {
+            // 급여 계산 (작업자 일당 기준 × 공수)
             const worker = this.findWorker(row['작업자']);
             const hours = parseFloat(row['공수']) || 0;
             let totalSalary = 0, tax = 0, netSalary = 0;
@@ -349,22 +351,28 @@ class AdminConsole {
                 tax = Math.round(totalSalary * (this.config.taxRate || 3.3) / 100);
                 netSalary = totalSalary - tax;
                 
-                console.log('급여 계산 결과:', { totalSalary, tax, netSalary }); // 디버깅 로그
+                console.log('급여 계산 결과 (일당 기준):', { totalSalary, tax, netSalary }); // 디버깅 로그
             } else {
                 console.log('작업자 정보 없음 또는 공수 0:', { worker, hours }); // 디버깅 로그
             }
             
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td>${row['작업자'] || ''}</td>
-                <td>${this.formatExcelDate(row['일자'] || row['사용일'] || row['년-월-일'] || row['날짜'] || '')}</td>
-                <td>${row['현장'] || ''}</td>
-                <td>${row['공수'] || ''}</td>
+                <td class="editable" data-field="작업자" data-index="${index}">${row['작업자'] || ''}</td>
+                <td class="editable" data-field="일자" data-index="${index}">${this.formatExcelDate(row['일자'] || row['사용일'] || row['년-월-일'] || row['날짜'] || '')}</td>
+                <td class="editable" data-field="현장" data-index="${index}">${row['현장'] || ''}</td>
+                <td class="editable" data-field="공수" data-index="${index}">${row['공수'] || ''}</td>
                 <td>${totalSalary > 0 ? totalSalary.toLocaleString() + '원' : ''}</td>
                 <td>${tax > 0 ? tax.toLocaleString() + '원' : ''}</td>
                 <td>${netSalary > 0 ? netSalary.toLocaleString() + '원' : ''}</td>
-                <td>${row['메모'] || ''}</td>
+                <td class="editable" data-field="메모" data-index="${index}">${row['메모'] || ''}</td>
             `;
+            
+            // 더블클릭 이벤트 추가
+            tr.querySelectorAll('.editable').forEach(cell => {
+                cell.addEventListener('dblclick', (e) => this.makeCellEditable(e.target));
+            });
+            
             tbody.appendChild(tr);
         });
         
@@ -383,18 +391,24 @@ class AdminConsole {
         
         tbody.innerHTML = '';
         
-        data.slice(0, 10).forEach(row => {
+        data.slice(0, 10).forEach((row, index) => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td>${row['현장'] || ''}</td>
-                <td>${this.formatExcelDate(row['사용일'] || row['날짜'] || '')}</td>
-                <td>${row['작업자'] || ''}</td>
-                <td>${row['항목'] || ''}</td>
-                <td>${this.formatCurrency(row['금액'])}</td>
-                <td>${row['사용처'] || ''}</td>
-                <td>${row['주소'] || ''}</td>
-                <td>${row['메모'] || ''}</td>
+                <td class="editable" data-field="현장" data-index="${index}">${row['현장'] || ''}</td>
+                <td class="editable" data-field="사용일" data-index="${index}">${row['사용일'] || row['날짜'] || ''}</td>
+                <td class="editable" data-field="작업자" data-index="${index}">${row['작업자'] || ''}</td>
+                <td class="editable" data-field="항목" data-index="${index}">${row['항목'] || ''}</td>
+                <td class="editable" data-field="금액" data-index="${index}">${row['금액'] || ''}</td>
+                <td class="editable" data-field="사용처" data-index="${index}">${row['사용처'] || ''}</td>
+                <td class="editable" data-field="주소" data-index="${index}">${row['주소'] || ''}</td>
+                <td class="editable" data-field="메모" data-index="${index}">${row['메모'] || ''}</td>
             `;
+            
+            // 더블클릭 이벤트 추가
+            tr.querySelectorAll('.editable').forEach(cell => {
+                cell.addEventListener('dblclick', (e) => this.makeCellEditable(e.target));
+            });
+            
             tbody.appendChild(tr);
         });
         
@@ -686,25 +700,15 @@ class AdminConsole {
         });
     }
 
-    // 작업자 급여 계산 로직 완성
+    // 작업자 급여 계산 로직 - 일당 × 공수
     calculateSalary(worker, hours) {
         if (!worker || !hours || hours <= 0) return 0;
         
-        const hourlyRate = worker.hourlyRate || 0;
-        const monthlySalary = worker.monthlySalary || 0;
         const daily = worker.daily || 0;
         
-        // 시간당 단가가 있으면 시간 * 단가
-        if (hourlyRate > 0) {
-            return Math.round(hours * hourlyRate);
-        } 
-        // 일당이 있으면 일당 / 8시간 * 시간 (일 8시간 기준)
-        else if (daily > 0) {
-            return Math.round((daily / 8) * hours);
-        }
-        // 월급이 있으면 월급 / 160시간 * 시간 (월 160시간 기준)
-        else if (monthlySalary > 0) {
-            return Math.round((monthlySalary / 160) * hours);
+        // 일당 × 공수로 계산
+        if (daily > 0) {
+            return Math.round(daily * hours);
         }
         
         return 0;
@@ -723,7 +727,7 @@ class AdminConsole {
                     <span class="stat-item valid">유효: ${analysis.summary.valid}건</span>
                     <span class="stat-item duplicates">중복: ${analysis.summary.duplicates}건</span>
                     <span class="stat-item unmatched">미일치: ${analysis.summary.unmatched}건</span>
-                    ${analysis.filteredBySite ? `<span class="stat-item filtered">현장필터: ${analysis.filteredBySite.length}건</span>` : ''}
+                    ${analysis.filteredBySite ? `<span class="stat-item filtered">미일치현장: ${analysis.filteredBySite.length}건</span>` : ''}
                 </div>
             </div>
         `;
@@ -790,17 +794,17 @@ class AdminConsole {
             `;
         }
 
-        // 현장명 필터링 데이터 상세
+        // 미일치 현장명 데이터 상세
         if (analysis.filteredBySite && analysis.filteredBySite.length > 0) {
             analysisDiv.innerHTML += `
-                <div class="filtered-detail">
-                    <h6>🚫 현장명 필터링된 데이터 상세 (${analysis.filteredBySite.length}건)</h6>
-                    <div class="filtered-sites">
-                        <strong>관리자 설정에 등록되지 않은 현장명</strong>
+                <div class="unmatched-site-detail">
+                    <h6>🚫 미일치 현장명 데이터 상세 (${analysis.filteredBySite.length}건)</h6>
+                    <div class="unmatched-sites">
+                        <strong>관리자 설정에 등록되지 않은 현장명 - 미일치 데이터로 관리 필요</strong>
                         ${analysis.filteredBySite.map(filtered => `
-                            <div class="filtered-item">
+                            <div class="unmatched-site-item">
                                 <span class="row-info">행 ${filtered.row}</span>
-                                <span class="filtered-info">: "${filtered.site}" (${filtered.reason})</span>
+                                <span class="unmatched-site-info">: "${filtered.site}" (${filtered.reason})</span>
                             </div>
                         `).join('')}
                     </div>
@@ -887,12 +891,18 @@ class AdminConsole {
 
     findExistingExpenseRecord(record) {
         const existingData = JSON.parse(localStorage.getItem('expenseData') || '[]');
-        return existingData.find(existing => 
-            existing.date === record.date &&
-            existing.site === record.site &&
-            existing.category === record.category &&
-            existing.amount === record.amount
-        );
+        
+        // 중복 검사 키 생성 함수
+        const createDuplicateKey = (item) => {
+            return `${item.date || ''}|${item.site || ''}|${item.worker || ''}|${item.category || ''}|${item.amount || ''}|${item.vendor || ''}|${item.address || ''}`;
+        };
+        
+        const recordKey = createDuplicateKey(record);
+        
+        return existingData.find(existing => {
+            const existingKey = createDuplicateKey(existing);
+            return existingKey === recordKey;
+        });
     }
 
     findWorker(workerName) {
@@ -903,11 +913,10 @@ class AdminConsole {
         if (!worker && window.db && window.db.workers) {
             worker = window.db.workers.find(w => w.name === workerName);
             if (worker) {
-                // index.html의 구조에 맞게 변환 (daily를 hourlyRate로 변환)
+                // index.html의 구조에 맞게 변환
                 return {
                     name: worker.name,
                     daily: worker.daily,
-                    hourlyRate: worker.daily / 8, // 일당을 8시간으로 나누어 시간당 단가 계산
                     monthlySalary: 0
                 };
             }
@@ -992,7 +1001,6 @@ class AdminConsole {
             id: Date.now(),
             name,
             daily: daily || 0,
-            hourlyRate: daily ? daily / 8 : 0, // 일당을 8시간으로 나누어 시간당 단가 자동 계산
             monthlySalary: 0,
             timestamp: new Date().toISOString()
         };
@@ -1228,8 +1236,7 @@ class AdminConsole {
                 <div class="worker-info">
                     <div style="font-weight: 600; margin-bottom: 4px;">${worker.name}</div>
                     <div style="font-size: var(--fz-caption); color: var(--g);">
-                        일당: ${worker.daily ? worker.daily.toLocaleString() + '원' : '설정안됨'} | 
-                        시간당: ${worker.hourlyRate ? worker.hourlyRate.toLocaleString() + '원' : '자동계산'}
+                        일당: ${worker.daily ? worker.daily.toLocaleString() + '원' : '설정안됨'}
                     </div>
                 </div>
                 <div class="worker-actions">
@@ -1412,7 +1419,7 @@ class AdminConsole {
         analysis.summary.unmatched = analysis.unmatched.total;
         analysis.summary.valid = data.length - analysis.duplicates.total;
 
-        // 현장명 필터링 데이터 수집
+        // 현장명 필터링 데이터 수집 (미일치 현장명)
         const filteredSites = new Set();
         data.forEach(row => {
             const site = row['현장'];
@@ -1423,7 +1430,7 @@ class AdminConsole {
         analysis.filteredBySite = Array.from(filteredSites).map(site => ({
             row: data.findIndex(row => row['현장'] === site) + 2,
             site: site,
-            reason: '등록되지 않은 현장명'
+            reason: '등록되지 않은 현장명 - 미일치 데이터로 관리 필요'
         }));
 
         return analysis;
@@ -1447,9 +1454,16 @@ class AdminConsole {
     analyzeExpenseData(data) {
         return this.analyzeData(data, {
             getDateValue: (row) => row['사용일'] || row['날짜'],
-            getDuplicateKey: (row, date) => `${date}_${row['현장']}`,
-            isExactDuplicate: (row, existing) => JSON.stringify(row) === JSON.stringify(existing),
-            getDifferenceDescription: (row, existing) => '다른 필드 값',
+            getDuplicateKey: (row, date) => `${date}_${row['현장']}_${row['작업자']}_${row['항목']}_${row['금액']}_${row['사용처']}_${row['주소']}`,
+            isExactDuplicate: (row, existing) => 
+                row['현장'] === existing['현장'] &&
+                row['사용일'] === existing['사용일'] &&
+                row['작업자'] === existing['작업자'] &&
+                row['항목'] === existing['항목'] &&
+                row['금액'] === existing['금액'] &&
+                row['사용처'] === existing['사용처'] &&
+                row['주소'] === existing['주소'],
+            getDifferenceDescription: (row, existing) => '현장, 사용일, 작업자, 항목, 금액, 사용처, 주소 중 하나라도 다른 데이터',
             entityValidations: [
                 { field: '현장', type: 'site', validator: (name) => this.findSite(name) }
             ]
@@ -1481,7 +1495,7 @@ class AdminConsole {
         }
 
         if (analysis.filteredBySite && analysis.filteredBySite.length > 0) {
-            summaryMessage += `${analysis.filteredBySite.length}건의 현장명 필터링된 데이터가 발견되었습니다. `;
+            summaryMessage += `${analysis.filteredBySite.length}건의 미일치 현장명이 발견되었습니다. 이 데이터는 별도로 관리되어야 합니다. `;
         }
 
         summaryMessage += `유효한 데이터는 ${analysis.summary.valid}건입니다.`;
@@ -1498,7 +1512,7 @@ class AdminConsole {
     // 경비 데이터 요약
     generateExpenseDataSummary(processedData, analysis) {
         return this.generateDataSummary(processedData, analysis, '경비 데이터', {
-            partialDuplicateDescription: '날짜, 현장, 작업자는 동일하지만 다른 필드 값이 다른 데이터로 간주되었습니다.'
+            partialDuplicateDescription: '현장, 사용일, 작업자, 항목, 금액, 사용처, 주소 중 하나라도 다른 데이터로 간주되었습니다.'
         });
     }
 
@@ -1636,7 +1650,7 @@ class AdminConsole {
                     <span class="stat-item valid">유효: ${analysis.summary.valid}건</span>
                     <span class="stat-item duplicates">중복: ${analysis.summary.duplicates}건</span>
                     <span class="stat-item unmatched">미일치: ${analysis.summary.unmatched}건</span>
-                    ${analysis.filteredBySite ? `<span class="stat-item filtered">현장필터: ${analysis.filteredBySite.length}건</span>` : ''}
+                    ${analysis.filteredBySite ? `<span class="stat-item filtered">미일치현장: ${analysis.filteredBySite.length}건</span>` : ''}
                 </div>
             </div>
         `;
@@ -1658,6 +1672,42 @@ class AdminConsole {
         // 분석 결과를 상태 메시지 아래에 추가
         statusDiv.appendChild(issuesDiv);
     }
+
+    // 공통 중복 제거 함수
+    removeDuplicates(data, keyFields) {
+        const uniqueData = [];
+        const seen = new Set();
+        
+        data.forEach(row => {
+            const key = keyFields.map(field => row[field] || '').join('|');
+            if (!seen.has(key)) {
+                seen.add(key);
+                uniqueData.push(row);
+            }
+        });
+        
+        return uniqueData;
+    }
+
+    // 메모이제이션을 위한 캐시
+    memoize(func, keyGenerator) {
+        const cache = new Map();
+        
+        return function(...args) {
+            const key = keyGenerator ? keyGenerator(...args) : JSON.stringify(args);
+            
+            if (cache.has(key)) {
+                return cache.get(key);
+            }
+            
+            const result = func.apply(this, args);
+            cache.set(key, result);
+            return result;
+        };
+    }
+
+    // 작업자 검색 최적화 (메모이제이션 적용)
+    findWorkerOptimized = this.memoize(this.findWorker, (name) => name);
 
     // 공통 문제점 내보내기 함수
     exportIssuesGeneric(data, dataType, analyzer) {
@@ -1694,6 +1744,137 @@ class AdminConsole {
         a.download = `${filename}_${new Date().toISOString().split('T')[0]}.json`;
         a.click();
         URL.revokeObjectURL(url);
+    }
+
+
+
+    
+
+    
+    // 셀 편집 관련 메서드들
+    makeCellEditable(cell) {
+        const currentValue = cell.textContent;
+        const field = cell.dataset.field;
+        const index = parseInt(cell.dataset.index);
+        
+        // 입력 필드 생성
+        const input = document.createElement('input');
+        input.type = this.getInputType(field);
+        input.value = currentValue;
+        input.className = 'cell-edit-input';
+        
+        // 입력 필드 스타일 적용
+        input.style.width = '100%';
+        input.style.padding = '4px';
+        input.style.border = '1px solid #007bff';
+        input.style.borderRadius = '4px';
+        input.style.fontSize = '14px';
+        
+        // 기존 내용을 입력 필드로 교체
+        cell.textContent = '';
+        cell.appendChild(input);
+        input.focus();
+        input.select();
+        
+        // 편집 완료 처리
+        const finishEdit = () => {
+            const newValue = input.value.trim();
+            
+            // 값이 변경된 경우에만 업데이트
+            if (newValue !== currentValue) {
+                // 데이터 업데이트
+                if (field === '일자' || field === '사용일') {
+                    // 날짜 형식 검증
+                    if (this.isValidDate(newValue)) {
+                        this.updateData(field, index, newValue);
+                        cell.textContent = this.formatExcelDate(newValue);
+                    } else {
+                        alert('올바른 날짜 형식을 입력해주세요 (YYYY-MM-DD)');
+                        cell.textContent = currentValue;
+                    }
+                } else if (field === '공수' || field === '금액') {
+                    // 숫자 형식 검증
+                    const numValue = parseFloat(newValue);
+                    if (!isNaN(numValue) && numValue >= 0) {
+                        this.updateData(field, index, numValue);
+                        cell.textContent = field === '금액' ? this.formatCurrency(numValue) : numValue;
+                    } else {
+                        alert('올바른 숫자를 입력해주세요');
+                        cell.textContent = currentValue;
+                    }
+                } else {
+                    // 일반 텍스트
+                    this.updateData(field, index, newValue);
+                    cell.textContent = newValue;
+                }
+                
+                // 급여 재계산 (작업 데이터인 경우)
+                if (this.workData[index]) {
+                    this.recalculateSalary(index);
+                }
+            } else {
+                cell.textContent = currentValue;
+            }
+        };
+        
+        // Enter 키 또는 포커스 아웃 시 편집 완료
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                finishEdit();
+            } else if (e.key === 'Escape') {
+                cell.textContent = currentValue;
+            }
+        });
+        
+        input.addEventListener('blur', finishEdit);
+    }
+    
+    getInputType(field) {
+        if (field === '일자' || field === '사용일') return 'date';
+        if (field === '공수' || field === '금액') return 'number';
+        return 'text';
+    }
+    
+    isValidDate(dateString) {
+        const date = new Date(dateString);
+        return date instanceof Date && !isNaN(date);
+    }
+    
+    updateData(field, index, value) {
+        // 작업 데이터 업데이트
+        if (this.workData[index]) {
+            this.workData[index][field] = value;
+            console.log(`작업 데이터 업데이트: ${field} = ${value}`);
+        }
+        
+        // 경비 데이터 업데이트
+        if (this.expenseData[index]) {
+            this.expenseData[index][field] = value;
+            console.log(`경비 데이터 업데이트: ${field} = ${value}`);
+        }
+    }
+    
+    recalculateSalary(index) {
+        const workRow = this.workData[index];
+        if (!workRow) return;
+        
+        const worker = this.findWorker(workRow['작업자']);
+        const hours = parseFloat(workRow['공수']) || 0;
+        
+        if (worker && hours > 0) {
+            const totalSalary = this.calculateSalary(worker, hours);
+            const tax = Math.round(totalSalary * (this.config.taxRate || 3.3) / 100);
+            const netSalary = totalSalary - tax;
+            
+            // 테이블의 급여 컬럼들 업데이트
+            const row = document.querySelector(`#workPreviewTable tbody tr:nth-child(${index + 1})`);
+            if (row) {
+                const cells = row.cells;
+                if (cells[4]) cells[4].textContent = totalSalary > 0 ? totalSalary.toLocaleString() + '원' : '';
+                if (cells[5]) cells[5].textContent = tax > 0 ? tax.toLocaleString() + '원' : '';
+                if (cells[6]) cells[6].textContent = netSalary > 0 ? netSalary.toLocaleString() + '원' : '';
+            }
+        }
     }
 
     // PWA 관련 메서드들
@@ -1771,72 +1952,176 @@ function showTab(tabName) {
 
 // 전역 함수들
 function processWorkData() {
-    adminConsole.processWorkData();
+    if (window.adminConsole) {
+        window.adminConsole.processWorkData();
+    } else {
+        console.error('adminConsole이 아직 초기화되지 않았습니다.');
+        alert('시스템이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.');
+    }
 }
 
 function processExpenseData() {
-    adminConsole.processExpenseData();
+    if (window.adminConsole) {
+        window.adminConsole.processExpenseData();
+    } else {
+        console.error('adminConsole이 아직 초기화되지 않았습니다.');
+        alert('시스템이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.');
+    }
 }
 
 function cleanWorkData() {
-    adminConsole.cleanWorkData();
+    if (window.adminConsole) {
+        window.adminConsole.cleanWorkData();
+    } else {
+        console.error('adminConsole이 아직 초기화되지 않았습니다.');
+        alert('시스템이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.');
+    }
 }
 
 function cleanExpenseData() {
-    adminConsole.cleanExpenseData();
+    if (window.adminConsole) {
+        window.adminConsole.cleanExpenseData();
+    } else {
+        console.error('adminConsole이 아직 초기화되지 않았습니다.');
+        alert('시스템이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.');
+    }
 }
 
 function showWorkDataIssues() {
-    adminConsole.showWorkDataIssues();
+    if (window.adminConsole) {
+        window.adminConsole.showWorkDataIssues();
+    } else {
+        console.error('adminConsole이 아직 초기화되지 않았습니다.');
+        alert('시스템이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.');
+    }
 }
 
 function showExpenseDataIssues() {
-    adminConsole.showExpenseDataIssues();
+    if (window.adminConsole) {
+        window.adminConsole.showExpenseDataIssues();
+    } else {
+        console.error('adminConsole이 아직 초기화되지 않았습니다.');
+        alert('시스템이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.');
+    }
 }
 
 function clearWorkData() {
-    adminConsole.clearWorkData();
+    if (window.adminConsole) {
+        window.adminConsole.clearWorkData();
+    } else {
+        console.error('adminConsole이 아직 초기화되지 않았습니다.');
+        alert('시스템이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.');
+    }
 }
 
 function clearExpenseData() {
-    adminConsole.clearExpenseData();
+    if (window.adminConsole) {
+        window.adminConsole.clearExpenseData();
+    } else {
+        console.error('adminConsole이 아직 초기화되지 않았습니다.');
+        alert('시스템이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.');
+    }
 }
 
 function addWorker() {
-    adminConsole.addWorker();
+    if (window.adminConsole) {
+        window.adminConsole.addWorker();
+    } else {
+        console.error('adminConsole이 아직 초기화되지 않았습니다.');
+        alert('시스템이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.');
+    }
 }
 
 function addSite() {
-    adminConsole.addSite();
+    if (window.adminConsole) {
+        window.adminConsole.addSite();
+    } else {
+        console.error('adminConsole이 아직 초기화되지 않았습니다.');
+        alert('시스템이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.');
+    }
 }
 
 function saveSystemConfig() {
-    adminConsole.saveSystemConfig();
+    if (window.adminConsole) {
+        window.adminConsole.saveSystemConfig();
+    } else {
+        console.error('adminConsole이 아직 초기화되지 않았습니다.');
+        alert('시스템이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.');
+    }
 }
 
 function testConnection() {
-    adminConsole.testConnection();
+    if (window.adminConsole) {
+        window.adminConsole.testConnection();
+    } else {
+        console.error('adminConsole이 아직 초기화되지 않았습니다.');
+        alert('시스템이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.');
+    }
 }
 
 function syncToSupabase() {
-    adminConsole.syncToSupabase();
+    if (window.adminConsole) {
+        window.adminConsole.syncToSupabase();
+    } else {
+        console.error('adminConsole이 아직 초기화되지 않았습니다.');
+        alert('시스템이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.');
+    }
 }
 
 function exportAllData() {
-    adminConsole.exportAllData();
+    if (window.adminConsole) {
+        window.adminConsole.exportAllData();
+    } else {
+        console.error('adminConsole이 아직 초기화되지 않았습니다.');
+        alert('시스템이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.');
+    }
 }
 
 function showDataStatus() {
-    adminConsole.showDataStatus();
+    if (window.adminConsole) {
+        window.adminConsole.showDataStatus();
+    } else {
+        console.error('adminConsole이 아직 초기화되지 않았습니다.');
+        alert('시스템이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.');
+    }
 }
 
 function closeModal(modalId) {
-    adminConsole.closeModal(modalId);
+    if (window.adminConsole) {
+        window.adminConsole.closeModal(modalId);
+    } else {
+        console.error('adminConsole이 아직 초기화되지 않았습니다.');
+        alert('시스템이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.');
+    }
 }
+
+
 
 // 페이지 로드 시 초기화
 document.addEventListener('DOMContentLoaded', () => {
-    window.adminConsole = new AdminConsole();
+    try {
+        console.log('AdminConsole 초기화 시작...');
+        window.adminConsole = new AdminConsole();
+        console.log('AdminConsole 인스턴스 생성 완료:', window.adminConsole);
+        
+        // 전역 함수들이 제대로 작동하는지 확인
+        if (typeof window.processWorkData === 'undefined') {
+            console.error('processWorkData 함수가 정의되지 않았습니다.');
+        }
+        if (typeof window.processExpenseData === 'undefined') {
+            console.error('processExpenseData 함수가 정의되지 않았습니다.');
+        }
+    } catch (error) {
+        console.error('AdminConsole 초기화 중 오류 발생:', error);
+    }
+});
+
+// 전역 함수들이 제대로 작동하는지 확인하는 함수 추가
+window.addEventListener('load', () => {
+    console.log('페이지 로드 완료');
+    console.log('adminConsole 객체:', window.adminConsole);
+    console.log('processWorkData 함수:', typeof window.processWorkData);
+    console.log('processExpenseData 함수:', typeof window.processExpenseData);
 });
 
 // 모달 외부 클릭 시 닫기

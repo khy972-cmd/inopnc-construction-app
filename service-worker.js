@@ -8,7 +8,7 @@ const PRECACHE_URLS = [
   '/index.html',       // SPA 엔트리
   '/offline.html',
   '/manifest.webmanifest',
-  '/icon-192x192.png',
+  '/apple-touch-icon-180.png',
   '/icon-512x512.png'
 ];
 
@@ -149,8 +149,8 @@ self.addEventListener('push', (event) => {
     const data = event.data.json();
     const options = {
       body: data.body || '새로운 알림이 있습니다.',
-      icon: '/icon-192x192.png',
-      badge: '/icon-192x192.png',
+          icon: '/apple-touch-icon-180.png',
+    badge: '/apple-touch-icon-180.png',
       vibrate: [200, 100, 200],
       data: {
         url: data.url || '/'

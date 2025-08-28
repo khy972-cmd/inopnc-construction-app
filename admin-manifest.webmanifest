@@ -12,7 +12,7 @@
   "categories": ["business", "productivity"],
   "icons": [
     {
-      "src": "icon-192x192.png",
+      "src": "apple-touch-icon-180.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
@@ -32,7 +32,7 @@
       "url": "/admin-console.html#workers",
       "icons": [
         {
-          "src": "icon-192x192.png",
+          "src": "apple-touch-icon-180.png",
           "sizes": "192x192"
         }
       ]
@@ -44,7 +44,7 @@
       "url": "/admin-console.html#upload",
       "icons": [
         {
-          "src": "icon-192x192.png",
+          "src": "apple-touch-icon-180.png",
           "sizes": "192x192"
         }
       ]

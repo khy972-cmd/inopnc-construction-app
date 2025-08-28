@@ -12,24 +12,45 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
+            /* Colors */
             --p: #0068FE;
             --t: #111827;
             --bg: #f6f8fb;
             --b: #e5e7eb;
             --g: #6b7280;
-            --space: 16px;
-            --lg: 24px;
-            --radius: 10px;
-            --fz-body: 14px;
-            --fz-small: 12px;
-            --fz-label: 12px;
-            --fz-btn: 14px;
-            --fz-h2: 16px;
-            --fz-table: 12px;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --info: #17a2b8;
+            
+            /* Spacing */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 12px;
+            --space-lg: 16px;
+            --space-xl: 24px;
+            
+            /* Border radius */
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 20px;
+            
+            /* Font sizes */
             --fz-caption: 12px;
-            --fz-modal: 14px;
+            --fz-body: 14px;
+            --fz-h2: 16px;
+            --fz-h1: 24px;
+            
+            /* Shadows */
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.12);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
+            
+            /* Transitions */
+            --transition: all 0.3s ease;
+            
+            /* Backgrounds */
             --input-bg: #fff;
-            --shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
         }
 
         [data-theme="dark"] {
@@ -38,7 +59,9 @@
             --bg: #0a1929;
             --b: #1e3a5f;
             --g: #7aa3ff;
-            --shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
             --input-bg: #1e3a5f;
         }
 
@@ -62,18 +85,18 @@
         .admin-header {
             background: var(--p);
             color: white;
-            padding: 12px 0;
+            padding: var(--space-md) 0;
             text-align: center;
-            box-shadow: var(--shadow);
+            box-shadow: var(--shadow-md);
         }
 
         .admin-header h1 {
-            font-size: 24px;
+            font-size: var(--fz-h1);
             margin: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: var(--space-sm);
         }
 
         .admin-header h1 i {
@@ -89,24 +112,26 @@
         .admin-container {
             max-width: 1400px;
             margin: 0 auto;
-            padding: 12px;
+            padding: var(--space-md);
         }
 
         .admin-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 12px;
+            gap: var(--space-md);
+            margin-bottom: var(--space-md);
         }
+        
+
 
         .admin-card {
             background: var(--input-bg);
-            border-radius: var(--radius);
-            padding: 12px;
-            box-shadow: var(--shadow);
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
+            box-shadow: var(--shadow-sm);
             border: 1px solid var(--b);
-            transition: all 0.3s ease;
-            margin-bottom: 12px;
+            transition: var(--transition);
+            margin-bottom: var(--space-md);
         }
 
         .admin-card:last-child {
@@ -136,10 +161,10 @@
 
         .file-upload-area {
             border: 2px dashed var(--b);
-            border-radius: var(--radius);
-            padding: 12px;
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
             text-align: center;
-            transition: all 0.3s ease;
+            transition: var(--transition);
             cursor: pointer;
             background: var(--bg);
         }
@@ -174,20 +199,20 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: var(--space-sm);
             height: 38px;
-            padding: 0 12px;
-            border-radius: 10px;
+            padding: 0 var(--space-md);
+            border-radius: var(--radius-md);
             border: 1px solid var(--b);
             background: var(--input-bg);
             color: var(--t);
             font-weight: 500;
             cursor: pointer;
             white-space: nowrap;
-            font-size: var(--fz-btn);
+            font-size: var(--fz-body);
             min-width: 88px;
             line-height: 1;
-            transition: all 0.3s ease;
+            transition: var(--transition);
             position: relative;
             overflow: hidden;
         }
@@ -233,9 +258,9 @@
             width: 100%;
             height: 8px;
             background: var(--bg);
-            border-radius: 4px;
+            border-radius: var(--space-xs);
             overflow: hidden;
-            margin: 12px 0;
+            margin: var(--space-md) 0;
         }
 
         .progress-fill {
@@ -246,9 +271,9 @@
         }
 
         .status-message {
-            padding: 12px;
-            border-radius: var(--radius);
-            margin: 12px 0;
+            padding: var(--space-md);
+            border-radius: var(--radius-sm);
+            margin: var(--space-md) 0;
             font-weight: 500;
             font-size: var(--fz-caption);
         }
@@ -278,26 +303,26 @@
         }
 
         .data-preview {
-            margin-top: 12px;
+            margin-top: var(--space-md);
         }
 
         .data-preview h3 {
             font-size: var(--fz-h2);
-            margin-bottom: 8px;
+            margin-bottom: var(--space-sm);
             color: var(--t);
         }
 
         .preview-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 8px;
-            font-size: var(--fz-table);
+            margin-top: var(--space-sm);
+            font-size: var(--fz-caption);
         }
 
         .preview-table th,
         .preview-table td {
             border: 1px solid var(--b);
-            padding: 8px 12px;
+            padding: var(--space-sm) var(--space-md);
             text-align: left;
         }
 
@@ -305,12 +330,41 @@
             background: var(--bg);
             font-weight: 700;
             text-align: center;
-            margin-bottom: 12px;
-            padding: 8px 0;
+            margin-bottom: var(--space-md);
+            padding: var(--space-sm) 0;
         }
 
         .preview-table tr:nth-child(even) {
             background: rgba(0, 0, 0, 0.02);
+        }
+        
+        /* 편집 가능한 셀 스타일 */
+        .editable {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .editable:hover {
+            background-color: rgba(0, 104, 254, 0.1) !important;
+        }
+        
+        .editable:active {
+            background-color: rgba(0, 104, 254, 0.2) !important;
+        }
+        
+        .cell-edit-input {
+            background: var(--input-bg);
+            color: var(--t);
+            border: 2px solid var(--p) !important;
+            outline: none;
+        }
+        
+        [data-theme="dark"] .editable:hover {
+            background-color: rgba(76, 141, 255, 0.1) !important;
+        }
+        
+        [data-theme="dark"] .editable:active {
+            background-color: rgba(76, 141, 255, 0.2) !important;
         }
 
         [data-theme="dark"] .preview-table th {
@@ -323,28 +377,28 @@
 
         .action-buttons {
             display: flex;
-            gap: 12px;
-            margin-top: 12px;
+            gap: var(--space-md);
+            margin-top: var(--space-md);
         }
 
         .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: var(--space-sm);
             height: 38px;
-            padding: 0 12px;
-            border-radius: 10px;
+            padding: 0 var(--space-md);
+            border-radius: var(--radius-md);
             border: 1px solid var(--b);
             background: var(--input-bg);
             color: var(--t);
             font-weight: 500;
             cursor: pointer;
             white-space: nowrap;
-            font-size: var(--fz-btn);
+            font-size: var(--fz-body);
             min-width: 88px;
             line-height: 1;
-            transition: all 0.3s ease;
+            transition: var(--transition);
             position: relative;
             overflow: hidden;
         }
@@ -430,18 +484,18 @@
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 12px;
-            margin-bottom: 12px;
+            gap: var(--space-md);
+            margin-bottom: var(--space-md);
         }
 
         .stat-card {
             background: var(--input-bg);
-            border-radius: var(--radius);
-            padding: 12px;
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
             text-align: center;
-            box-shadow: var(--shadow);
+            box-shadow: var(--shadow-sm);
             border: 1px solid var(--b);
-            transition: all 0.3s ease;
+            transition: var(--transition);
         }
 
         .stat-card:hover {
@@ -625,20 +679,20 @@
         @media (max-width: 768px) {
             .admin-grid {
                 grid-template-columns: 1fr;
-                gap: 8px;
+                gap: var(--space-sm);
             }
 
             .admin-container {
-                padding: 8px;
+                padding: var(--space-sm);
             }
 
             .admin-card {
-                padding: 8px;
+                padding: var(--space-sm);
             }
 
             .action-buttons {
                 flex-direction: column;
-                gap: 8px;
+                gap: var(--space-sm);
             }
 
             .btn {
@@ -706,11 +760,11 @@
             background: rgba(255, 255, 255, 0.2);
             border: 1px solid rgba(255, 255, 255, 0.3);
             color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 12px;
+            padding: var(--space-sm) var(--space-lg);
+            border-radius: var(--radius-lg);
+            font-size: var(--fz-caption);
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: var(--transition);
             backdrop-filter: blur(10px);
         }
 
@@ -767,21 +821,21 @@
         <div class="admin-card">
             <h2><i class="fas fa-users"></i> 작업자 정보 관리</h2>
             <div class="upload-section">
-                <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: end;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: var(--space-md); align-items: end;">
                     <div>
-                        <label style="display: block; margin-bottom: 4px; font-size: var(--fz-caption);">작업자명</label>
-                        <input type="text" id="workerName" placeholder="작업자명" style="width: 100%; padding: 8px; border: 1px solid var(--b); border-radius: 6px;">
+                        <label style="display: block; margin-bottom: var(--space-xs); font-size: var(--fz-caption);">작업자명</label>
+                        <input type="text" id="workerName" placeholder="작업자명" style="width: 100%; padding: var(--space-sm); border: 1px solid var(--b); border-radius: var(--radius-sm);">
                     </div>
                     <div>
-                        <label style="display: block; margin-bottom: 4px; font-size: var(--fz-caption);">일당 (원)</label>
-                        <input type="number" id="workerDaily" placeholder="일당" style="width: 100%; padding: 8px; border: 1px solid var(--b); border-radius: 6px;">
+                        <label style="display: block; margin-bottom: var(--space-xs); font-size: var(--fz-caption);">일당 (원)</label>
+                        <input type="number" id="workerDaily" placeholder="일당" style="width: 100%; padding: var(--space-sm); border: 1px solid var(--b); border-radius: var(--radius-sm);">
                     </div>
                     <button class="btn btn-primary" onclick="addWorker()">
                         <i class="fas fa-plus"></i> 추가
                     </button>
                 </div>
                 
-                <div id="workerList" style="margin-top: 12px;"></div>
+                <div id="workerList" style="margin-top: var(--space-md);"></div>
             </div>
         </div>
 
@@ -800,6 +854,8 @@
                     </button>
                 </div>
                 
+
+                
                 <div id="workProgress" style="display: none;">
                     <div class="progress-bar">
                         <div class="progress-fill" id="workProgressFill"></div>
@@ -810,7 +866,7 @@
                 <div id="workStatus"></div>
                 
                 <div class="data-preview" id="workPreview" style="display: none;">
-                    <h3>데이터 미리보기</h3>
+                    <h3>데이터 미리보기 <small style="color: #6c757d; font-size: 14px;">(더블클릭으로 편집 가능)</small></h3>
                     <div class="table-scroll">
                         <table class="preview-table" id="workPreviewTable">
                             <thead>
@@ -862,6 +918,8 @@
                     </button>
                 </div>
                 
+
+                
                 <div id="expenseProgress" style="display: none;">
                     <div class="progress-bar">
                         <div class="progress-fill" id="expenseProgressFill"></div>
@@ -872,7 +930,7 @@
                 <div id="expenseStatus"></div>
                 
                 <div class="data-preview" id="expensePreview" style="display: none;">
-                    <h3>데이터 미리보기</h3>
+                    <h3>데이터 미리보기 <small style="color: #6c757d; font-size: 14px;">(더블클릭으로 편집 가능)</small></h3>
                     <div class="table-scroll">
                         <table class="preview-table" id="expensePreviewTable">
                             <thead>
@@ -917,7 +975,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="관리자콘솔">
-    <link rel="apple-touch-icon" href="icon-192x192.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon-180.png">
     
     <script src="admin-console.js"></script>
 </body>
